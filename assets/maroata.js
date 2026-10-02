@@ -433,6 +433,11 @@
       : `<iframe src="${ytEmbed(v.id)}" title="${esc(v.title || "YouTube video")}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>`;
     box.dataset.state = "playing";
     root.classList.add("is-video-playing");
+    // The pressed poster is gone; keep keyboard and screen-reader users on the player.
+    if (document.activeElement === document.body || !document.activeElement) {
+      const f = $(".m-vplayer__frame iframe, .m-vplayer__frame a", box);
+      if (f) f.focus({ preventScroll: true });
+    }
   }
 
   function resetVideos(except) {
@@ -595,7 +600,10 @@
     if (!sheet || !TITLES[type]) return;
     clearTimeout(closeTimer);
     if (sheet.hidden) lastFocus = document.activeElement;
-    if (type === "videos") resetVideos();
+    if (type === "videos") {
+      resetVideos();
+      if (playing.kind) stop(); // the sheet's video autoplays: one source at a time
+    }
     sheet.dataset.type = type;
     sheetTitle.textContent = TITLES[type];
     sheetBody.innerHTML = sheetContent(type, arg);

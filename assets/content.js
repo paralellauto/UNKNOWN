@@ -144,15 +144,15 @@ window.MAROATA = {
   },
 
   /* YOUTUBE — recommended videos. `id` is the part after watch?v= in the URL.
-     Leave id empty ("") to show an open slot. */
+     The first one plays inline in the Visuals window; with more than one,
+     an "All picks" button opens the full list. */
   youtube: [
     {
       id: "ECgC2QOxOFU",
       title: "Recommended transmission", // rename to the real video title
       note: "Selected by MAROATA",
     },
-    { id: "", title: "", note: "" },
-    { id: "", title: "", note: "" },
+    // Add more picks here: { id: "VIDEO_ID", title: "…", note: "…" }
   ],
 
   /* QUOTES — yours. These four are placeholders written to show the layout;
