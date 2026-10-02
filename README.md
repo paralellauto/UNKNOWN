@@ -1,6 +1,6 @@
 # MAROATA
 
-A one-page, no-scroll website for MAROATA and the **UNKNOWN** radio show he hosts, with Juliet as its muse. UNKNOWN episodes (every MAROATA set is one) with tracklists, a YouTube player, a blog ("Transmissions"), quotes, upcoming dates and a link to Instagram all float on a single screen. Each panel expands in place.
+A one-page, no-scroll website for MAROATA and **UNKNOWN**, the radio show hosted by MAROATA, with Juliet as its muse. UNKNOWN episodes (every MAROATA set is one) with tracklists, a YouTube player, a blog ("Transmissions"), quotes, upcoming dates and a link to Instagram all float on a single screen. Each panel expands in place.
 
 The design is **Signal** (Bunker × System Core): a dark oxblood room with a hairline grid and one sweeping beam of light, Juliet in colour as the framed subject, amber HUD windows you can drag around, and UNKNOWN as a black broadcast console across the bottom. Red only appears while the show is on air.
 
