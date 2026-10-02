@@ -611,7 +611,7 @@
       "https://w.soundcloud.com/player/?url=" + encodeURIComponent(widgetTarget(s)) +
       "&color=%23" + scColor() + "&inverse=true&auto_play=true&show_user=true";
     $(".m-deck__frame", deck).innerHTML = linkOnly
-      ? `<a class="m-ext" href="${esc(s.url)}" target="_blank" rel="noopener">Listen on SoundCloud ↗</a>`
+      ? `<span class="m-deck__preview">No audio in this preview</span> <a class="m-ext" href="${esc(s.url)}" target="_blank" rel="noopener">Listen on SoundCloud ↗</a>`
       : `<iframe title="SoundCloud player: ${esc(s.title || s.code)}" src="${src}" height="20" scrolling="no" frameborder="no" allow="autoplay"></iframe>`;
     $(".m-deck__title", deck).textContent = `${s.code ? s.code + " — " : ""}${s.title || "Set"}`;
     deck.dataset.state = "playing";
