@@ -390,6 +390,62 @@
     </div>`;
   };
 
+  /* ---------- inline YouTube player ("Recommended transmission" module) ----------
+     Shows the video's poster with a play button; pressing it loads the YouTube
+     player in place. Only one source plays at a time: starting a video stops the
+     SoundCloud deck, and starting the deck (or opening the video sheet) resets it. */
+  const ytWatch = (id) => `https://www.youtube.com/watch?v=${encodeURIComponent(id)}`;
+  const ytEmbed = (id) => `https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}?autoplay=1&rel=0&modestbranding=1&playsinline=1`;
+  function videoIndex(i) {
+    const list = videos();
+    let idx = Number(i) || 0;
+    if (!list[idx] || !list[idx].id) idx = list.findIndex((v) => v.id);
+    return idx;
+  }
+
+  R.videoPoster = function (v, idx) {
+    return `<button type="button" class="m-vplayer__start" data-play-video="${idx}" aria-label="Play ${esc(v.title || "video")}"><img src="${thumb(v.id)}" alt="" loading="lazy" onerror="this.remove()"><span class="m-vplayer__play" aria-hidden="true"></span></button>`;
+  };
+
+  R.videoInline = function (i) {
+    const list = videos();
+    const idx = videoIndex(i);
+    const v = list[idx];
+    if (!v) return `<p class="m-empty">Next pick soon.</p>`;
+    const picks = list.filter((x) => x.id).length;
+    return `<div class="m-vplayer" data-vplayer="${idx}" data-state="idle">
+      <div class="m-vplayer__frame">${R.videoPoster(v, idx)}</div>
+      <div class="m-vplayer__bar">
+        <span class="m-vplayer__text"><span class="m-vplayer__title">${esc(v.title || "Recommended")}</span>${v.note ? `<span class="m-vplayer__note">${esc(v.note)}</span>` : ""}</span>
+        <span class="m-vplayer__actions">${ext(ytWatch(v.id), "YouTube ↗", "m-vplayer__yt")}${picks > 1 ? `<button type="button" class="m-vplayer__more" data-open="videos">All picks</button>` : ""}</span>
+      </div>
+    </div>`;
+  };
+
+  function playVideo(idx, el) {
+    const box = el && el.closest("[data-vplayer]");
+    const v = videos()[idx];
+    if (!box || !v || !v.id) return;
+    if (playing.kind) stop();
+    resetVideos(box);
+    $(".m-vplayer__frame", box).innerHTML = linkOnly
+      ? `<a class="m-player__link" href="${esc(ytWatch(v.id))}" target="_blank" rel="noopener"><span>Watch on YouTube ↗</span></a>`
+      : `<iframe src="${ytEmbed(v.id)}" title="${esc(v.title || "YouTube video")}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>`;
+    box.dataset.state = "playing";
+    root.classList.add("is-video-playing");
+  }
+
+  function resetVideos(except) {
+    $$("[data-vplayer]").forEach((box) => {
+      if (box === except || box.dataset.state !== "playing") return;
+      const idx = Number(box.dataset.vplayer);
+      const v = videos()[idx];
+      $(".m-vplayer__frame", box).innerHTML = v && v.id ? R.videoPoster(v, idx) : "";
+      box.dataset.state = "idle";
+    });
+    if (!$$("[data-vplayer][data-state='playing']").length) root.classList.remove("is-video-playing");
+  }
+
   /* ---------- SoundCloud deck (one player for the whole page) ---------- */
   let deck = null;
   let playing = { kind: "", i: -1 };
@@ -425,16 +481,32 @@
     i = Number(i);
     const e = episodes()[i];
     if (!e) return;
-    playItem({ url: e.url, code: `${radio().name || "UNKNOWN"} ${e.code || ""}`.trim(), title: e.title }, "episode", i);
+    playItem({ url: e.url, embed: e.embed, code: `${radio().name || "UNKNOWN"} ${e.code || ""}`.trim(), title: e.title }, "episode", i);
+  }
+
+  // What the SoundCloud widget should load. `embed` may be the src of SoundCloud's own
+  // embed code (w.soundcloud.com/player/?url=…) or an api.soundcloud.com/tracks/… URL;
+  // it is needed for private or unlisted tracks. Otherwise the public page URL works.
+  function widgetTarget(s) {
+    const e = String(s.embed || "").trim();
+    if (e) {
+      try {
+        const u = new URL(e);
+        if (/(^|\.)w\.soundcloud\.com$/.test(u.hostname) && u.searchParams.get("url")) return u.searchParams.get("url");
+        return e;
+      } catch (err) { /* not a URL: fall back to the page link */ }
+    }
+    return s.url;
   }
 
   function playItem(s, kind, i) {
     if (!s || !s.url || !deck) return;
     // Pressing the item that is already playing stops it (instead of reloading it from 0:00).
     if (playing.kind === kind && playing.i === i) { stop(); return; }
+    resetVideos();
     playing = { kind, i };
     const src =
-      "https://w.soundcloud.com/player/?url=" + encodeURIComponent(s.url) +
+      "https://w.soundcloud.com/player/?url=" + encodeURIComponent(widgetTarget(s)) +
       "&color=%23" + scColor() + "&inverse=true&auto_play=true&show_user=true";
     $(".m-deck__frame", deck).innerHTML = linkOnly
       ? `<a class="m-ext" href="${esc(s.url)}" target="_blank" rel="noopener">Listen on SoundCloud ↗</a>`
@@ -523,6 +595,7 @@
     if (!sheet || !TITLES[type]) return;
     clearTimeout(closeTimer);
     if (sheet.hidden) lastFocus = document.activeElement;
+    if (type === "videos") resetVideos();
     sheet.dataset.type = type;
     sheetTitle.textContent = TITLES[type];
     sheetBody.innerHTML = sheetContent(type, arg);
@@ -718,6 +791,7 @@
       switch (kind) {
         case "sets": el.innerHTML = R.sets(limit); break;
         case "videos": el.innerHTML = R.videos(limit); break;
+        case "video-player": el.innerHTML = R.videoInline(el.dataset.index); break;
         case "insta": el.innerHTML = R.insta(limit); break;
         case "handles": el.innerHTML = R.handles(); break;
         case "gigs": el.innerHTML = R.gigs(limit); break;
@@ -772,7 +846,7 @@
   /* ---------- events ---------- */
   function bind() {
     document.addEventListener("click", (e) => {
-      const t = e.target.closest("[data-play],[data-play-episode],[data-show-episode],[data-video],[data-post],[data-open],[data-m='sheet-close']");
+      const t = e.target.closest("[data-play],[data-play-episode],[data-show-episode],[data-play-video],[data-video],[data-post],[data-open],[data-m='sheet-close']");
       if (!t) {
         if (sheet && !sheet.hidden && e.target === sheet) close();
         return;
@@ -781,6 +855,7 @@
       if (t.dataset.play != null) return play(t.dataset.play);
       if (t.dataset.playEpisode != null) return playEpisode(t.dataset.playEpisode);
       if (t.dataset.showEpisode != null) return open("episode", t.dataset.showEpisode);
+      if (t.dataset.playVideo != null) return playVideo(Number(t.dataset.playVideo), t);
       if (t.dataset.video != null) return open("videos", t.dataset.video);
       if (t.dataset.post != null) return open("post", t.dataset.post);
       if (t.dataset.open) return open(t.dataset.open);
@@ -820,7 +895,7 @@
 
   const M = {
     data: D, $, $$, esc, asset, pad, parts, reduced, finePointer, desktopQuery,
-    upcomingGigs, render: R, play, playEpisode, stop, open, close, fitBoard, parallax,
+    upcomingGigs, render: R, play, playEpisode, playVideo, resetVideos, stop, open, close, fitBoard, parallax,
     broadcast, episodes,
     onTick: (fn) => tickers.push(fn), scale: 1,
   };

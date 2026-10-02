@@ -100,20 +100,30 @@ window.MAROATA = {
     ],
   },
 
-  /* SOUNDCLOUD — add a set by pasting its SoundCloud URL into an open slot.
-     Leave url empty ("") and the slot shows as OPEN on the site. */
+  /* SOUNDCLOUD — newest set first.
+     url:   the set's SoundCloud page (used for "Open on SoundCloud" links).
+     embed: optional. Paste the src="…" from SoundCloud's Share › Embed code
+            (w.soundcloud.com/player/?url=…). Needed for private or unlisted
+            tracks; public tracks also play from url alone.
+     Leave url empty ("") and the slot shows as "Coming soon" on the site. */
   soundcloud: {
     profile: "https://soundcloud.com/eduardo-love",
     sets: [
       {
-        code: "MRT-000",
-        title: "Latest uploads",
+        code: "EP-13",
+        title: "Hookah Lounge — Road to Teques 6",
+        url: "https://soundcloud.com/eduardo-love/episode-13",
+        embed: "https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/tracks/soundcloud%253Atracks%253A2265452678&color=%23ff5500&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true",
+        meta: "Episode 13 · SoundCloud",
+      },
+      {
+        code: "ALL",
+        title: "All uploads",
         url: "https://soundcloud.com/eduardo-love",
         meta: "Full SoundCloud stream",
       },
-      { code: "MRT-001", title: "", url: "", meta: "" },
-      { code: "MRT-002", title: "", url: "", meta: "" },
-      { code: "MRT-003", title: "", url: "", meta: "" },
+      { code: "EP-14", title: "", url: "", meta: "" },
+      { code: "EP-15", title: "", url: "", meta: "" },
     ],
   },
 
