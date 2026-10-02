@@ -1,6 +1,6 @@
 # MAROATA
 
-A one-page, no-scroll website for MAROATA techno sets and the **UNKNOWN** radio show, with Juliet as its muse. SoundCloud sets, UNKNOWN episodes with tracklists, a YouTube player, Instagram, a blog ("Transmissions"), your quotes and upcoming dates all float on a single screen. Each panel expands in place.
+A one-page, no-scroll website for MAROATA and the **UNKNOWN** radio show he hosts, with Juliet as its muse. UNKNOWN episodes (every MAROATA set is one) with tracklists, a YouTube player, a blog ("Transmissions"), quotes, upcoming dates and a link to Instagram all float on a single screen. Each panel expands in place.
 
 The design is **Signal** (Bunker × System Core): a dark oxblood room with a hairline grid and one sweeping beam of light, Juliet in colour as the framed subject, amber HUD windows you can drag around, and UNKNOWN as a black broadcast console across the bottom. Red only appears while the show is on air.
 
@@ -20,13 +20,13 @@ Then open http://localhost:8000 (or the port `serve` prints).
 
 Everything lives in **`assets/content.js`**. Each section has comments explaining it.
 
-- **SoundCloud sets** (`soundcloud.sets`): newest first. `url` is the set's SoundCloud page. For a private or unlisted track, also paste the `src="…"` from SoundCloud's Share › Embed code into `embed`. Empty slots show as "Coming soon". "Play latest set" plays the first set in the list.
-- **YouTube** (`youtube`): use the id from the URL (`watch?v=THIS_PART`). The first video plays inline in the Visuals window; add more and an "All picks" button appears. Rename "Recommended transmission" to the real video title.
-- **UNKNOWN radio** (`radio`): the show's name, tagline, optional station, frequency and live-stream link. `schedule` is the weekly slot (`day`, `time`, `durationMin`) in the show's own `timezone` (an IANA name such as `America/Mexico_City`); the site converts it to each visitor's local time, counts down to the next broadcast and shows ON AIR while it is live. `episodes` are listed newest first, each with a `code` (used in its link, e.g. `#episode-UNK-003`), title, guest, date, recording `url` (plus `embed` for private tracks; leave both empty until the episode is uploaded) and a `tracklist` (one line per track; `"ID — ID"` is the usual way to mark an unreleased or unidentified track). The logo is set live in Bebas Neue, the typeface of your UNKNOWN image; the original image is kept in `assets/img/unknown/`.
-- **Instagram** (`instagram`): Instagram does not let other sites pull your photos, so save the images you want into `assets/img/instagram/` and list them under `images`. The grid uses Juliet images as stand-ins until then. Add more accounts under `accounts`.
-- **Quotes** (`quotes`): the four lines there are placeholders that show the layout. Replace them with yours.
-- **Dates** (`gigs`): `date` is `YYYY-MM-DD`, `time` is `HH:MM`. Past dates disappear on their own. The countdown always points at the next one. Add `link` for tickets, and `timezone` (the venue's, e.g. `"Europe/Berlin"`) so the countdown is exact for visitors in other countries.
-- **Transmissions** (`blog`): each post has a `slug` (used in its link, e.g. `#post-four-am`), a title, date, tag, short excerpt and `body` paragraphs.
+- **UNKNOWN episodes** (`radio.episodes`): every MAROATA set is an UNKNOWN episode, so this one list fills the Sets window, the UNKNOWN console and the archive. Newest first. Each episode has a `code` (also its link, e.g. `#episode-EP-13`), a `title`, its SoundCloud `url`, and optionally `embed` (the `src="…"` from SoundCloud's Share › Embed code, needed for private or unlisted tracks), `date`, `guest` and a `tracklist` (one line per track; `"ID — ID"` marks an unidentified track). "Play latest episode" plays the first one.
+- **UNKNOWN schedule** (`radio.schedule`): `null` while it is to be announced; the site then shows TBA instead of a countdown. When it is set (`day`, `time`, `durationMin`, `timezone` such as `"America/Mexico_City"`, short `city` label), the site converts it to each visitor's local time, counts down to the next broadcast and shows ON AIR while it is live. The logo is set live in Bebas Neue, the typeface of your UNKNOWN image; the original image is in `assets/img/unknown/`.
+- **YouTube** (`youtube`): paste any YouTube link as `url` (or the 11-character `id`). The page pulls the real title and channel from YouTube by itself; add `title` only to override it. Videos play inside the page, never on YouTube. The first one plays in the Visuals window; with more than one, an "All picks" button opens the full list.
+- **Instagram** (`instagram`): your account, shown as a link. There is no photo grid.
+- **Quotes** (`quotes`): shown one at a time, rotating.
+- **Dates** (`gigs`): empty while dates are to be announced. Each gig has `date` (`YYYY-MM-DD`), `time` (`HH:MM`), `city`, `venue`, and optionally `link` (tickets) and `timezone` (the venue's, so the countdown is exact for visitors elsewhere). Past dates disappear on their own.
+- **Transmissions** (`blog`): each post has a `slug` (used in its link, e.g. `#post-four-am`), a title, date, tag, short excerpt and `body` paragraphs. The three posts there now are samples.
 - **Juliet** (`juliet`): her code, version, lines and gallery. Images are in `assets/img/juliet/`.
 
 Anything marked `sample: true` shows a small **SAMPLE** tag so it is never mistaken for a real date, episode or post. Remove the flag, or the whole entry, when you replace it.

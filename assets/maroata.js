@@ -69,11 +69,39 @@
   }
 
   const sets = () => (D.soundcloud && D.soundcloud.sets) || [];
-  const videos = () => D.youtube || [];
+  // A pick may give `id` (the 11-character video id) or any YouTube `url`
+  // (watch?v=…, youtu.be/…, /shorts/…, /embed/…).
+  function ytId(v) {
+    const raw = String((v && (v.id || v.url)) || "").trim();
+    if (/^[\w-]{11}$/.test(raw)) return raw;
+    try {
+      const u = new URL(raw);
+      if (/(^|\.)youtu\.be$/.test(u.hostname)) return u.pathname.slice(1, 12);
+      if (u.searchParams.get("v")) return u.searchParams.get("v").slice(0, 11);
+      const m = u.pathname.match(/\/(embed|shorts|live)\/([\w-]{11})/);
+      if (m) return m[2];
+    } catch (e) { /* not a URL */ }
+    return "";
+  }
+  const videos = () => (D.youtube || []).map((v) => Object.assign({}, v, { id: ytId(v) }));
   const posts = () => (D.blog || []).slice().sort((a, b) => toDate(b.date) - toDate(a.date));
   const quotes = () => (D.quotes || []).filter((q) => q && q.text);
   const radio = () => D.radio || {};
-  const episodes = () => (radio().episodes || []).slice().sort((a, b) => toDate(b.date) - toDate(a.date));
+  const hasDate = (x) => /^\d{4}-\d{2}-\d{2}$/.test(String((x && x.date) || ""));
+  // Newest first. When every episode has a date they are sorted by it; otherwise the
+  // order in content.js is kept as written.
+  const episodes = () => {
+    const list = (radio().episodes || []).slice();
+    return list.every(hasDate) ? list.sort((a, b) => toDate(b.date) - toDate(a.date)) : list;
+  };
+  // With no separate soundcloud.sets, the UNKNOWN episodes are the sets.
+  const setsFromRadio = () => !((D.soundcloud && D.soundcloud.sets) || []).length && episodes().length > 0;
+  // "25.09.26 · Guest" — date and guest only when known; otherwise the host.
+  const epMeta = (e) => {
+    const bits = [hasDate(e) ? parts(e.date).num : "", e.guest ? esc(e.guest) : ""].filter(Boolean);
+    if (!bits.length && radio().host) bits.push("Hosted by " + esc(radio().host));
+    return bits.join(" · ");
+  };
 
   /* ---------- radio schedule (show time zone → visitor's local time) ---------- */
   const DAY_INDEX = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
@@ -124,6 +152,7 @@
   const R = {};
 
   R.sets = function (limit) {
+    if (setsFromRadio()) return R.episodes(limit);
     const list = sets().slice(0, limit || undefined);
     if (!list.length) return `<p class="m-empty">No sets yet.</p>`;
     return `<ol class="m-sets">${list
@@ -149,6 +178,68 @@
 
   const thumb = (id) => `https://i.ytimg.com/vi/${encodeURIComponent(id)}/hqdefault.jpg`;
 
+  /* YouTube titles. A pick's `title` in content.js wins; otherwise the page asks
+     YouTube's oEmbed endpoint (then noembed.com as a fallback) for the real title
+     and channel, caches them for a week, and fills every element marked
+     data-yt-title / data-yt-note / data-yt-label. */
+  const ytMeta = {}; // id -> { title, author }
+  const YT_FALLBACK = "Recommended transmission";
+  const vTitle = (v) => (v.title || (ytMeta[v.id] && ytMeta[v.id].title) || YT_FALLBACK);
+  const vNote = (v) => [(!v.title || v.showChannel) && ytMeta[v.id] && ytMeta[v.id].author, v.note].filter(Boolean).join(" · ");
+  const tAttr = (v) => (v.title ? "" : ` data-yt-title="${esc(v.id)}"`);
+  const nAttr = (v) => ` data-yt-note="${esc(v.id)}"`;
+
+  function cachedMeta(id) {
+    try {
+      const c = JSON.parse(localStorage.getItem("mrt-yt-" + id) || "null");
+      if (c && c.title && Date.now() - c.at < 7 * 86400000) return c;
+    } catch (e) { /* storage blocked */ }
+    return null;
+  }
+  async function fetchMeta(id) {
+    const watch = `https://www.youtube.com/watch?v=${id}`;
+    const sources = [
+      `https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(watch)}`,
+      `https://noembed.com/embed?url=${encodeURIComponent(watch)}`,
+    ];
+    for (const url of sources) {
+      try {
+        const ctrl = typeof AbortController === "function" ? new AbortController() : null;
+        const t = ctrl && setTimeout(() => ctrl.abort(), 6000);
+        const r = await fetch(url, ctrl ? { signal: ctrl.signal } : undefined);
+        if (t) clearTimeout(t);
+        if (!r.ok) continue;
+        const j = await r.json();
+        if (j && j.title && !j.error) return { title: String(j.title), author: String(j.author_name || ""), at: Date.now() };
+      } catch (e) { /* blocked, offline or no CORS: try the next source */ }
+    }
+    return null;
+  }
+  function paintMeta(id) {
+    const v = videos().find((x) => x.id === id);
+    if (!v) return;
+    const title = vTitle(v);
+    const note = vNote(v);
+    $$(`[data-yt-title="${id}"]`).forEach((el) => { if (el.textContent !== title) el.textContent = title; });
+    $$(`[data-yt-note="${id}"]`).forEach((el) => { el.textContent = note; el.hidden = !note; });
+    $$(`[data-yt-label="${id}"]`).forEach((el) => el.setAttribute("aria-label", `${el.dataset.ytVerb || "Play"} ${title}`));
+    $$(`iframe[data-yt-frame="${id}"]`).forEach((el) => (el.title = title));
+  }
+  function loadVideoMeta() {
+    if (linkOnly) return; // sandboxed previews cannot reach YouTube
+    const ids = [...new Set(videos().filter((v) => v.id && !v.title).map((v) => v.id))];
+    ids.forEach((id) => {
+      const c = cachedMeta(id);
+      if (c) { ytMeta[id] = c; paintMeta(id); }
+      fetchMeta(id).then((m) => {
+        if (!m) return;
+        ytMeta[id] = m;
+        try { localStorage.setItem("mrt-yt-" + id, JSON.stringify(m)); } catch (e) { /* storage blocked */ }
+        paintMeta(id);
+      });
+    });
+  }
+
   R.videos = function (limit, exclude) {
     const list = videos()
       .map((v, i) => ({ v, i }))
@@ -163,10 +254,11 @@
             <span class="m-video__thumb"><span class="m-video__slot">Open slot</span></span>
             <span class="m-video__title">Next pick soon</span></div></li>`;
         }
-        return `<li class="m-video"><button type="button" class="m-video__btn" data-video="${i}" aria-label="Watch ${esc(v.title || "video")}">
+        const note = vNote(v);
+        return `<li class="m-video"><button type="button" class="m-video__btn" data-video="${i}" data-yt-label="${esc(v.id)}" data-yt-verb="Watch" aria-label="Watch ${esc(vTitle(v))}">
           <span class="m-video__thumb"><img src="${thumb(v.id)}" alt="" loading="lazy" onerror="this.parentNode.classList.add('is-broken');this.remove()"><span class="m-video__play" aria-hidden="true"></span></span>
-          <span class="m-video__title">${esc(v.title || "Recommended")}</span>
-          ${v.note ? `<span class="m-video__note">${esc(v.note)}</span>` : ""}</button></li>`;
+          <span class="m-video__title"${tAttr(v)}>${esc(vTitle(v))}</span>
+          <span class="m-video__note"${nAttr(v)}${note ? "" : " hidden"}>${esc(note)}</span></button></li>`;
       })
       .join("")}</ul>`;
   };
@@ -189,7 +281,7 @@
 
   R.gigs = function (limit) {
     const list = upcomingGigs().slice(0, limit || undefined);
-    if (!list.length) return `<p class="m-empty">New dates soon.</p>`;
+    if (!list.length) return `<p class="m-empty">Dates to be announced.</p>`;
     return `<ol class="m-gigs">${list
       .map((g) => {
         const p = parts(g.date, g.time);
@@ -242,7 +334,7 @@
 
   R.schedule = function () {
     const sc = radio().schedule;
-    if (!sc || !sc.day) return "";
+    if (!sc || !sc.day) return `<span class="m-tba">Schedule to be announced</span>`;
     const di = DAY_INDEX[String(sc.day).slice(0, 3).toLowerCase()];
     return `${DAY_PLURAL[di] || esc(sc.day)} · ${esc(sc.time || "")}${sc.city ? " " + esc(sc.city) : ""}${sc.sample ? ` <span class="m-flag">Sample</span>` : ""}`;
   };
@@ -253,7 +345,6 @@
     if (!list.length) return `<p class="m-empty">First episode soon.</p>`;
     return `<ol class="m-episodes">${list
       .map((e, i) => {
-        const p = parts(e.date);
         const code = esc(e.code || `UNK-${pad(all.length - i).padStart(3, "0")}`);
         const play = e.url
           ? `<button type="button" class="m-episode__play" data-play-episode="${i}" aria-label="Play ${code}"><span aria-hidden="true"></span></button>`
@@ -262,7 +353,7 @@
           <button type="button" class="m-episode__btn" data-show-episode="${code}">
             <span class="m-episode__code">${code}</span>
             <span class="m-episode__title">${esc(e.title || "Untitled")}</span>
-            <span class="m-episode__meta">${p.num}${e.guest ? " · " + esc(e.guest) : ""}${e.sample ? ` <span class="m-flag">Sample</span>` : ""}</span>
+            <span class="m-episode__meta">${epMeta(e)}${e.sample ? ` <span class="m-flag">Sample</span>` : ""}</span>
           </button>${play}</li>`;
       })
       .join("")}</ol>`;
@@ -273,13 +364,12 @@
     const i = Math.max(0, all.findIndex((e) => e.url));
     const e = all[i];
     if (!e) return `<p class="m-empty">First episode soon.</p>`;
-    const p = parts(e.date);
     return `<div class="m-radio-latest" data-episode="${i}">
       <span class="m-radio-latest__label">Latest episode</span>
       <button type="button" class="m-radio-latest__open" data-show-episode="${esc(e.code)}">
         <span class="m-radio-latest__code">${esc(e.code)}</span>
         <span class="m-radio-latest__title">${esc(e.title || "")}</span>
-        <span class="m-radio-latest__meta">${p.num}${e.guest ? " · " + esc(e.guest) : ""}${e.sample ? ` <span class="m-flag">Sample</span>` : ""}</span>
+        <span class="m-radio-latest__meta">${epMeta(e)}${e.sample ? ` <span class="m-flag">Sample</span>` : ""}</span>
       </button>
       ${e.url ? `<button type="button" class="m-radio-latest__play" data-play-episode="${i}"><span class="m-radio-latest__icon" aria-hidden="true"></span><span class="m-play-text">Play episode</span></button>` : ""}
     </div>`;
@@ -287,7 +377,7 @@
 
   R.tracklist = function (e) {
     const t = (e && e.tracklist) || [];
-    if (!t.length) return `<p class="m-empty">Tracklist after the broadcast.</p>`;
+    if (!t.length) return `<p class="m-empty">Tracklist coming soon.</p>`;
     return `<ol class="m-tracklist">${t.map((line, k) => `<li><span class="m-tracklist__no">${pad(k + 1)}</span><span class="m-tracklist__track">${esc(line)}</span></li>`).join("")}</ol>`;
   };
 
@@ -334,13 +424,13 @@
     const i = all.findIndex((e) => e.code === code);
     const e = all[i];
     if (!e) return `<p class="m-empty">Episode not found.</p>`;
-    const p = parts(e.date);
+    const p = hasDate(e) ? parts(e.date) : null;
     const older = all[i + 1];
     const newer = all[i - 1];
     return `<article class="m-ep" data-episode="${i}">
-      <p class="m-ep__meta"><span class="m-unknown m-ep__show">${esc(radio().name || "UNKNOWN")}</span><span>${esc(e.code)}</span><time datetime="${esc(e.date)}">${p.d} ${p.m} ${p.y}</time>${e.length ? lengthTag(e.length) : ""}${e.sample ? `<span class="m-flag">Sample</span>` : ""}</p>
+      <p class="m-ep__meta"><span class="m-unknown m-ep__show">${esc(radio().name || "UNKNOWN")}</span><span>${esc(e.code)}</span>${p ? `<time datetime="${esc(e.date)}">${p.d} ${p.m} ${p.y}</time>` : ""}${e.length ? lengthTag(e.length) : ""}${e.sample ? `<span class="m-flag">Sample</span>` : ""}</p>
       <h2 class="m-ep__title">${esc(e.title || "Untitled")}</h2>
-      ${e.guest ? `<p class="m-ep__guest">${esc(e.guest)}</p>` : ""}
+      <p class="m-ep__guest">${e.guest ? esc(e.guest) : radio().host ? "Hosted by " + esc(radio().host) : ""}</p>
       <div class="m-ep__actions">
         ${e.url ? `<button type="button" class="m-ep__play" data-play-episode="${i}"><span class="m-ep__icon" aria-hidden="true"></span><span class="m-play-text">Play episode</span></button>${ext(e.url, "Open on SoundCloud ↗")}` : `<span class="m-ep__soon">Recording not uploaded yet</span>`}
       </div>
@@ -382,10 +472,10 @@
     return `<div class="m-player">
       <div class="m-player__frame">${linkOnly
         ? `<a class="m-player__link" href="https://www.youtube.com/watch?v=${encodeURIComponent(v.id)}" target="_blank" rel="noopener"><img src="${thumb(v.id)}" alt="" onerror="this.remove()"><span>Watch on YouTube ↗</span></a>`
-        : `<iframe src="${src}" title="${esc(v.title || "YouTube video")}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen loading="lazy"></iframe>`}</div>
-      <div class="m-player__info"><h2 class="m-player__title">${esc(v.title || "Recommended")}</h2>
-        ${v.note ? `<p class="m-player__note">${esc(v.note)}</p>` : ""}
-        ${ext(`https://www.youtube.com/watch?v=${encodeURIComponent(v.id)}`, "Open on YouTube ↗")}</div>
+        : `<iframe src="${src}" title="${esc(vTitle(v))}" data-yt-frame="${esc(v.id)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen loading="lazy"></iframe>`}</div>
+      <div class="m-player__info"><h2 class="m-player__title"${tAttr(v)}>${esc(vTitle(v))}</h2>
+        <p class="m-player__note"${nAttr(v)}${vNote(v) ? "" : " hidden"}>${esc(vNote(v))}</p>
+        ${linkOnly ? ext(`https://www.youtube.com/watch?v=${encodeURIComponent(v.id)}`, "Open on YouTube ↗") : ""}</div>
       ${others.length ? `<div class="m-player__more">${R.videos(0, idx)}</div>` : ""}
     </div>`;
   };
@@ -404,7 +494,7 @@
   }
 
   R.videoPoster = function (v, idx) {
-    return `<button type="button" class="m-vplayer__start" data-play-video="${idx}" aria-label="Play ${esc(v.title || "video")}"><img src="${thumb(v.id)}" alt="" loading="lazy" onerror="this.remove()"><span class="m-vplayer__play" aria-hidden="true"></span></button>`;
+    return `<button type="button" class="m-vplayer__start" data-play-video="${idx}" data-yt-label="${esc(v.id)}" aria-label="Play ${esc(vTitle(v))}"><img src="${thumb(v.id)}" alt="" loading="lazy" onerror="this.remove()"><span class="m-vplayer__play" aria-hidden="true"></span></button>`;
   };
 
   R.videoInline = function (i) {
@@ -416,8 +506,8 @@
     return `<div class="m-vplayer" data-vplayer="${idx}" data-state="idle">
       <div class="m-vplayer__frame">${R.videoPoster(v, idx)}</div>
       <div class="m-vplayer__bar">
-        <span class="m-vplayer__text"><span class="m-vplayer__title">${esc(v.title || "Recommended")}</span>${v.note ? `<span class="m-vplayer__note">${esc(v.note)}</span>` : ""}</span>
-        <span class="m-vplayer__actions">${ext(ytWatch(v.id), "YouTube ↗", "m-vplayer__yt")}${picks > 1 ? `<button type="button" class="m-vplayer__more" data-open="videos">All picks</button>` : ""}</span>
+        <span class="m-vplayer__text"><span class="m-vplayer__title"${tAttr(v)}>${esc(vTitle(v))}</span><span class="m-vplayer__note"${nAttr(v)}${vNote(v) ? "" : " hidden"}>${esc(vNote(v))}</span></span>
+        ${picks > 1 ? `<span class="m-vplayer__actions"><button type="button" class="m-vplayer__more" data-open="videos">All picks</button></span>` : ""}
       </div>
     </div>`;
   };
@@ -430,7 +520,7 @@
     resetVideos(box);
     $(".m-vplayer__frame", box).innerHTML = linkOnly
       ? `<a class="m-player__link" href="${esc(ytWatch(v.id))}" target="_blank" rel="noopener"><span>Watch on YouTube ↗</span></a>`
-      : `<iframe src="${ytEmbed(v.id)}" title="${esc(v.title || "YouTube video")}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>`;
+      : `<iframe src="${ytEmbed(v.id)}" title="${esc(vTitle(v))}" data-yt-frame="${esc(v.id)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>`;
     box.dataset.state = "playing";
     root.classList.add("is-video-playing");
     // The pressed poster is gone; keep keyboard and screen-reader users on the player.
@@ -460,7 +550,7 @@
     deck.dataset.state = "idle";
     deck.innerHTML = `
       <div class="m-deck__idle">
-        <button type="button" class="m-deck__go" data-play="first"><span class="m-deck__icon" aria-hidden="true"></span><span>Play latest set</span></button>
+        <button type="button" class="m-deck__go" data-play="first"><span class="m-deck__icon" aria-hidden="true"></span><span>${esc(el.dataset.label || (setsFromRadio() ? "Play latest episode" : "Play latest set"))}</span></button>
       </div>
       <div class="m-deck__live">
         <div class="m-deck__now"><span class="m-deck__label">Now playing</span><span class="m-deck__title"></span>
@@ -476,6 +566,13 @@
   }
 
   function play(i) {
+    if (setsFromRadio()) {
+      // Sets are the UNKNOWN episodes: play the episode (keeps every list in sync).
+      const eps = episodes();
+      const k = i === "first" ? eps.findIndex((e) => e.url) : Number(i);
+      if (k >= 0) playEpisode(k);
+      return;
+    }
     const list = sets();
     if (i === "first") i = list.findIndex((s) => s.url);
     i = Number(i);
@@ -584,7 +681,7 @@
       case "post":
         return R.post(arg);
       case "insta":
-        return `<div class="m-sheet__insta"><p class="m-sheet__handles">${R.handles()}</p>${R.insta()}</div>`;
+        return `<div class="m-sheet__insta"><p class="m-sheet__handles">${R.handles()}</p>${((D.instagram || {}).images || []).length ? R.insta() : `<p class="m-empty">Photos and stories live on Instagram.</p>`}</div>`;
       case "juliet":
         return R.juliet();
       case "radio":
@@ -721,7 +818,7 @@
     });
     const next = upcomingGigs()[0];
     $$("[data-m='countdown']").forEach((el) => {
-      if (!next) { el.textContent = "Dates soon"; return; }
+      if (!next) { if (!el.querySelector(".m-cd--tba")) el.innerHTML = `<span class="m-cd m-cd--tba"><b>TBA</b></span>`; return; }
       let s = Math.floor((gigStart(next) - now.getTime()) / 1000);
       if (s <= 0) { if (el.textContent !== "On now") el.textContent = "On now"; return; } // started today
       const d = Math.floor(s / 86400); s -= d * 86400;
@@ -732,15 +829,16 @@
     // UNKNOWN radio: on-air state, next broadcast and countdown
     const b = broadcast(now.getTime());
     root.classList.toggle("radio-live", !!(b && b.live));
+    root.classList.toggle("radio-tba", !b);
     $$("[data-m='radio-status']").forEach((el) => {
       const live = !!(b && b.live);
       if (el.dataset.live !== String(live)) { el.dataset.live = String(live); el.innerHTML = R.onair(live); }
     });
     $$("[data-m='radio-countdown-label']").forEach((el) => {
-      el.textContent = b && b.live ? (el.dataset.liveText || "On air · ends in") : (el.dataset.offText || "Next broadcast in");
+      el.textContent = !b ? (el.dataset.tbaText || "Next broadcast") : b.live ? (el.dataset.liveText || "On air · ends in") : (el.dataset.offText || "Next broadcast in");
     });
     $$("[data-m='radio-countdown']").forEach((el) => {
-      if (!b) { el.textContent = "Schedule soon"; return; }
+      if (!b) { if (!el.querySelector(".m-cd--tba")) el.innerHTML = `<span class="m-cd m-cd--tba"><b>TBA</b></span>`; return; }
       let s = Math.max(0, Math.floor(((b.live ? b.end : b.next) - now.getTime()) / 1000));
       const d = Math.floor(s / 86400); s -= d * 86400;
       const h = Math.floor(s / 3600); s -= h * 3600;
@@ -748,7 +846,7 @@
       el.innerHTML = `${d ? `<span class="m-cd"><b>${pad(d)}</b><i>D</i></span>` : ""}<span class="m-cd"><b>${pad(h)}</b><i>H</i></span><span class="m-cd"><b>${pad(m)}</b><i>M</i></span><span class="m-cd"><b>${pad(s)}</b><i>S</i></span>`;
     });
     $$("[data-m='radio-next']").forEach((el) => {
-      if (!b || !b.next) { el.textContent = ""; return; }
+      if (!b || !b.next) { const t = el.dataset.tbaText || "To be announced"; if (el.textContent !== t) el.textContent = t; return; }
       const t = new Date(b.live ? b.start : b.next);
       const txt = `${DAYS[t.getDay()]} ${pad(t.getDate())} ${MONTHS[t.getMonth()]} · ${pad(t.getHours())}:${pad(t.getMinutes())}`;
       if (el.textContent !== txt) el.textContent = txt;
@@ -810,12 +908,16 @@
         case "juliet-code": el.textContent = (D.juliet && D.juliet.code) || ""; break;
         case "juliet-version": el.textContent = (D.juliet && D.juliet.version) || ""; break;
         case "juliet-line": el.textContent = ((D.juliet && D.juliet.lines) || [])[Number(el.dataset.i) || 0] || ""; break;
-        case "count-sets": el.textContent = pad(sets().filter((s) => s.url).length) + "/" + pad(sets().length); break;
+        case "count-sets": {
+          const list = setsFromRadio() ? episodes() : sets();
+          el.textContent = pad(list.filter((s) => s.url).length) + "/" + pad(list.length);
+          break;
+        }
         case "count-posts": el.textContent = pad(posts().length); break;
         case "count-gigs": el.textContent = pad(upcomingGigs().length); break;
         case "next-gig": {
           const g = upcomingGigs()[0];
-          if (!g) { el.textContent = "New dates soon"; break; }
+          if (!g) { el.innerHTML = `<span class="m-tba">Dates to be announced</span>`; break; }
           const p = parts(g.date, g.time);
           el.innerHTML = `<span class="m-next__date">${p.d} ${p.m}</span><span class="m-next__city">${esc(g.city)}</span>${g.sample ? `<span class="m-flag">Sample</span>` : ""}`;
           break;
@@ -930,6 +1032,7 @@
   function init() {
     previewOnAir();
     fill();
+    loadVideoMeta();
     bind();
     tick();
     setInterval(tick, 1000);

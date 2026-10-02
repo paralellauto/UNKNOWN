@@ -1,7 +1,7 @@
 /*
   MAROATA — site content
   ----------------------------------------------------------------------------
-  This is the only file you need to edit. All three design options read from it.
+  This is the only file you need to edit.
 
   Paths to images are relative to the site root (the folder with index.html).
   Dates use the format YYYY-MM-DD. Times use 24h "HH:MM".
@@ -21,65 +21,43 @@ window.MAROATA = {
     },
   },
 
-  /* UNKNOWN — the radio show.
+  /* UNKNOWN — the radio show, hosted by MAROATA. Every MAROATA set is an
+     UNKNOWN episode, so this list also fills the Sets window and the
+     "Play latest episode" button.
      The logo is set in Bebas Neue (self-hosted); the original image is in
      assets/img/unknown/.
 
-     schedule: when the show airs, in the show's own time zone. The site
+     schedule: null while the slot is to be announced. When it is set, the site
      converts it to each visitor's local time, counts down to the next
-     broadcast, and shows ON AIR while it is live.
-     timezone uses IANA names: "America/Mexico_City", "Europe/Berlin", ...
-     day: "sun" "mon" "tue" "wed" "thu" "fri" "sat".
+     broadcast and shows ON AIR while it is live. Example:
+       schedule: { day: "fri", time: "22:00", durationMin: 120,
+                   timezone: "America/Mexico_City", city: "CDMX" },
+     (day: "sun" "mon" "tue" "wed" "thu" "fri" "sat"; timezone is an IANA name.)
 
-     episodes: newest first. `url` is the SoundCloud (or Mixcloud) link to
-     the recording. Leave it empty until the episode is uploaded.
-     Tracklist lines are free text. "ID — ID" is the usual way to mark an
-     unreleased or unidentified track. */
+     episodes: newest first.
+       code      short label, also the episode's link (#episode-EP-13)
+       title     the episode title
+       url       its SoundCloud page
+       embed     optional: the src="…" from SoundCloud's Share › Embed code
+                 (needed for private or unlisted tracks)
+       date      optional, YYYY-MM-DD
+       guest     optional
+       tracklist optional, one line per track ("ID — ID" for unidentified) */
   radio: {
     name: "UNKNOWN",
     descriptor: "Radio show",
     host: "MAROATA",
-    tagline: "Unreleased records, unidentified tracks, unnamed rooms.", // placeholder line, replace with yours
+    tagline: "Unreleased records, unidentified tracks, unnamed rooms.",
     station: "", // e.g. "Radio Station Name". Empty hides it.
     frequency: "", // e.g. "98.3 FM". Empty hides it.
     live: { url: "" }, // link to the live stream page. Empty hides "Listen live".
-    schedule: {
-      day: "fri",
-      time: "22:00",
-      durationMin: 120,
-      timezone: "America/Mexico_City",
-      city: "CDMX",
-      sample: true, // remove once this is the real slot
-    },
+    schedule: null, // to be announced
     episodes: [
       {
-        code: "UNK-003",
-        title: "Signal from nowhere",
-        guest: "Guest to be announced",
-        date: "2026-09-25",
-        url: "https://soundcloud.com/eduardo-love", // stand-in: plays the SoundCloud profile
-        length: "2:00:00",
-        sample: true,
-        tracklist: ["ID — ID", "ID — ID", "ID — ID", "ID — ID", "ID — ID", "ID — ID"],
-      },
-      {
-        code: "UNK-002",
-        title: "No names after midnight",
-        guest: "MAROATA solo",
-        date: "2026-09-18",
-        url: "",
-        length: "2:00:00",
-        sample: true,
-        tracklist: ["ID — ID", "ID — ID", "ID — ID", "ID — ID"],
-      },
-      {
-        code: "UNK-001",
-        title: "Pilot",
-        guest: "MAROATA solo",
-        date: "2026-09-11",
-        url: "",
-        length: "1:30:00",
-        sample: true,
+        code: "EP-13",
+        title: "Hookah Lounge — Road to Teques 6",
+        url: "https://soundcloud.com/eduardo-love/episode-13",
+        embed: "https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/tracks/soundcloud%253Atracks%253A2265452678&color=%23151010&inverse=false&auto_play=false&show_user=true",
         tracklist: [],
       },
     ],
@@ -100,63 +78,31 @@ window.MAROATA = {
     ],
   },
 
-  /* SOUNDCLOUD — newest set first.
-     url:   the set's SoundCloud page (used for "Open on SoundCloud" links).
-     embed: optional. Paste the src="…" from SoundCloud's Share › Embed code
-            (w.soundcloud.com/player/?url=…). Needed for private or unlisted
-            tracks; public tracks also play from url alone.
-     Leave url empty ("") and the slot shows as "Coming soon" on the site. */
+  /* SOUNDCLOUD — your profile. Sets are the UNKNOWN episodes above.
+     (A separate `sets: [...]` list here would replace them in the Sets window.) */
   soundcloud: {
     profile: "https://soundcloud.com/eduardo-love",
-    sets: [
-      {
-        code: "EP-13",
-        title: "Hookah Lounge — Road to Teques 6",
-        url: "https://soundcloud.com/eduardo-love/episode-13",
-        embed: "https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/tracks/soundcloud%253Atracks%253A2265452678&color=%23ff5500&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true",
-        meta: "Episode 13 · SoundCloud",
-      },
-      {
-        code: "ALL",
-        title: "All uploads",
-        url: "https://soundcloud.com/eduardo-love",
-        meta: "Full SoundCloud stream",
-      },
-      { code: "EP-14", title: "", url: "", meta: "" },
-      { code: "EP-15", title: "", url: "", meta: "" },
-    ],
   },
 
-  /* INSTAGRAM — accounts plus a few images.
-     Instagram does not allow sites to pull your photos automatically, so save
-     the images you want into assets/img/instagram/ and list them here.
-     For now the grid uses Juliet images as stand-ins. */
+  /* INSTAGRAM — a link to your account (no photo grid). */
   instagram: {
     accounts: [{ handle: "maroata_", url: "https://www.instagram.com/maroata_/" }],
-    images: [
-      { src: "assets/img/juliet/juliet-core-01.jpg", alt: "Juliet, System Core poster", url: "https://www.instagram.com/maroata_/" },
-      { src: "assets/img/juliet/juliet-mono.jpg", alt: "Juliet in black and white", url: "https://www.instagram.com/maroata_/" },
-      { src: "assets/img/juliet/juliet-core-02.jpg", alt: "Juliet in black, red background", url: "https://www.instagram.com/maroata_/" },
-      { src: "assets/img/juliet/juliet-cosmic.jpg", alt: "Juliet with galaxy sunglasses", url: "https://www.instagram.com/maroata_/" },
-      { src: "assets/img/juliet/juliet-core-03.jpg", alt: "Juliet with gold hoops", url: "https://www.instagram.com/maroata_/" },
-      { src: "assets/img/juliet/juliet-core-01-figure.jpg", alt: "Juliet close-up", url: "https://www.instagram.com/maroata_/" },
-    ],
+    images: [],
   },
 
-  /* YOUTUBE — recommended videos. `id` is the part after watch?v= in the URL.
-     The first one plays inline in the Visuals window; with more than one,
+  /* YOUTUBE — recommended videos. Paste any YouTube link as `url` (or the
+     11-character `id`). The title and channel are pulled from YouTube
+     automatically; add `title: "…"` only to override them. Videos play inside
+     the page. The first one plays in the Visuals window; with more than one,
      an "All picks" button opens the full list. */
   youtube: [
     {
-      id: "ECgC2QOxOFU",
-      title: "Recommended transmission", // rename to the real video title
+      url: "https://www.youtube.com/watch?v=ECgC2QOxOFU&list=RDECgC2QOxOFU&start_radio=1",
       note: "Selected by MAROATA",
     },
-    // Add more picks here: { id: "VIDEO_ID", title: "…", note: "…" }
   ],
 
-  /* QUOTES — yours. These four are placeholders written to show the layout;
-     replace them with your own lines. */
+  /* QUOTES — shown one at a time, rotating. Add or replace lines any time. */
   quotes: [
     { text: "The kick drum is the only clock I trust after midnight.", by: "MAROATA" },
     { text: "A good set is one long sentence with no full stop.", by: "MAROATA" },
@@ -169,10 +115,8 @@ window.MAROATA = {
      `timezone` is optional: the venue's IANA zone (e.g. "Europe/Berlin") makes
      the countdown exact for visitors in other countries. */
   gigs: [
-    { date: "2026-10-24", time: "23:00", city: "Ciudad de México", venue: "Venue to be announced", link: "", sample: true },
-    { date: "2026-11-14", time: "00:00", city: "Berlin", venue: "Venue to be announced", link: "", sample: true },
-    { date: "2026-12-05", time: "23:30", city: "Guadalajara", venue: "Venue to be announced", link: "", sample: true },
-    { date: "2027-01-16", time: "22:00", city: "Tulum", venue: "Venue to be announced", link: "", sample: true },
+    // To be announced. Example:
+    // { date: "2026-11-14", time: "23:00", city: "Berlin", venue: "…", timezone: "Europe/Berlin", link: "https://…" },
   ],
 
   /* BLOG — "Transmissions". Each paragraph is one string in `body`.
