@@ -42,7 +42,21 @@ Every expanded panel has its own address, so you can share it directly:
 
 ## Deploy
 
-Any static host works: GitHub Pages, Netlify, Vercel or Cloudflare Pages. Point it at the repository root; there is nothing to build.
+The site is live through GitHub Pages at **https://maroata-unknown.studio/** (the `CNAME` file in the repository tells GitHub which domain it serves). Every push to the deployed branch goes live within a minute or two.
+
+Setup, done once:
+
+1. GitHub › repository Settings › Pages: Source "Deploy from a branch", the branch with the site, folder `/ (root)`. Custom domain: `maroata-unknown.studio`. Tick "Enforce HTTPS" once it is offered.
+2. At the domain registrar (DNS):
+   - `@` A records: `185.199.108.153`, `185.199.109.153`, `185.199.110.153`, `185.199.111.153`
+   - `@` AAAA records (optional, IPv6): `2606:50c0:8000::153`, `2606:50c0:8001::153`, `2606:50c0:8002::153`, `2606:50c0:8003::153`
+   - `www` CNAME: `paralellauto.github.io`
+   - Remove any other A, AAAA or CNAME records on `@` and `www` (parking pages, forwarding).
+3. Optional but recommended: GitHub › your account Settings › Pages › "Add a domain" to verify `maroata-unknown.studio` with a TXT record, so nobody else can claim it on GitHub.
+
+Any other static host (Cloudflare Pages, Netlify, Vercel) also works: point it at the repository root; there is nothing to build.
+
+Link previews (WhatsApp, Instagram, iMessage) use `assets/img/og-image.jpg`.
 
 ## Notes
 
