@@ -21,6 +21,70 @@ window.MAROATA = {
     },
   },
 
+  /* UNKNOWN — the radio show.
+     The logo is set in Bebas Neue (self-hosted); the original image is in
+     assets/img/unknown/.
+
+     schedule: when the show airs, in the show's own time zone. The site
+     converts it to each visitor's local time, counts down to the next
+     broadcast, and shows ON AIR while it is live.
+     timezone uses IANA names: "America/Mexico_City", "Europe/Berlin", ...
+     day: "sun" "mon" "tue" "wed" "thu" "fri" "sat".
+
+     episodes: newest first. `url` is the SoundCloud (or Mixcloud) link to
+     the recording. Leave it empty until the episode is uploaded.
+     Tracklist lines are free text. "ID — ID" is the usual way to mark an
+     unreleased or unidentified track. */
+  radio: {
+    name: "UNKNOWN",
+    descriptor: "Radio show",
+    host: "MAROATA",
+    tagline: "Unreleased records, unidentified tracks, unnamed rooms.", // placeholder line, replace with yours
+    station: "", // e.g. "Radio Station Name". Empty hides it.
+    frequency: "", // e.g. "98.3 FM". Empty hides it.
+    live: { url: "" }, // link to the live stream page. Empty hides "Listen live".
+    schedule: {
+      day: "fri",
+      time: "22:00",
+      durationMin: 120,
+      timezone: "America/Mexico_City",
+      city: "CDMX",
+      sample: true, // remove once this is the real slot
+    },
+    episodes: [
+      {
+        code: "UNK-003",
+        title: "Signal from nowhere",
+        guest: "Guest to be announced",
+        date: "2026-09-25",
+        url: "https://soundcloud.com/eduardo-love", // stand-in: plays the SoundCloud profile
+        length: "2:00:00",
+        sample: true,
+        tracklist: ["ID — ID", "ID — ID", "ID — ID", "ID — ID", "ID — ID", "ID — ID"],
+      },
+      {
+        code: "UNK-002",
+        title: "No names after midnight",
+        guest: "MAROATA solo",
+        date: "2026-09-18",
+        url: "",
+        length: "2:00:00",
+        sample: true,
+        tracklist: ["ID — ID", "ID — ID", "ID — ID", "ID — ID"],
+      },
+      {
+        code: "UNK-001",
+        title: "Pilot",
+        guest: "MAROATA solo",
+        date: "2026-09-11",
+        url: "",
+        length: "1:30:00",
+        sample: true,
+        tracklist: [],
+      },
+    ],
+  },
+
   /* JULIET — the muse. Images live in assets/img/juliet/ */
   juliet: {
     name: "JULIET",

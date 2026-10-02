@@ -61,6 +61,53 @@
   const videos = () => D.youtube || [];
   const posts = () => (D.blog || []).slice().sort((a, b) => toDate(b.date) - toDate(a.date));
   const quotes = () => (D.quotes || []).filter((q) => q && q.text);
+  const radio = () => D.radio || {};
+  const episodes = () => (radio().episodes || []).slice().sort((a, b) => toDate(b.date) - toDate(a.date));
+
+  /* ---------- radio schedule (show time zone → visitor's local time) ---------- */
+  const DAY_INDEX = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
+  const DAY_PLURAL = ["Sundays", "Mondays", "Tuesdays", "Wednesdays", "Thursdays", "Fridays", "Saturdays"];
+
+  // Wall-clock time in `tz` minus UTC, in ms. Falls back to the visitor's zone.
+  function tzOffset(utcMs, tz) {
+    if (tz) {
+      try {
+        const f = new Intl.DateTimeFormat("en-US", {
+          timeZone: tz, hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit",
+          hour: "2-digit", minute: "2-digit", second: "2-digit",
+        });
+        const p = {};
+        f.formatToParts(new Date(utcMs)).forEach((x) => (p[x.type] = x.value));
+        return Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour % 24, +p.minute, +p.second) - Math.floor(utcMs / 1000) * 1000;
+      } catch (e) { /* unknown zone: use the visitor's */ }
+    }
+    return -new Date(utcMs).getTimezoneOffset() * 60000;
+  }
+  // UTC ms for a wall-clock time in `tz`.
+  function zoned(y, mo, d, hh, mm, tz) {
+    const guess = Date.UTC(y, mo, d, hh, mm);
+    let t = guess - tzOffset(guess, tz);
+    t = guess - tzOffset(t, tz); // second pass settles daylight-saving edges
+    return t;
+  }
+  // { live, start, end, next } for the weekly slot around `nowMs`, or null without a schedule.
+  function broadcast(nowMs) {
+    const sc = radio().schedule;
+    if (!sc || !sc.day || !sc.time) return null;
+    const target = DAY_INDEX[String(sc.day).slice(0, 3).toLowerCase()];
+    if (target == null) return null;
+    const [hh, mm] = String(sc.time).split(":").map(Number);
+    const dur = (Number(sc.durationMin) || 60) * 60000;
+    const wall = new Date(nowMs + tzOffset(nowMs, sc.timezone));
+    const starts = [];
+    for (let k = -7; k <= 8; k++) {
+      const day = new Date(Date.UTC(wall.getUTCFullYear(), wall.getUTCMonth(), wall.getUTCDate() + k));
+      if (day.getUTCDay() === target) starts.push(zoned(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate(), hh || 0, mm || 0, sc.timezone));
+    }
+    const current = starts.find((t) => t <= nowMs && nowMs < t + dur);
+    const next = starts.find((t) => t > nowMs);
+    return { live: current != null, start: current != null ? current : next, end: current != null ? current + dur : null, next, dur };
+  }
 
   /* ---------- renderers ---------- */
   const R = {};
@@ -174,6 +221,112 @@
         .join("")}</div></div>`;
   };
 
+  /* UNKNOWN radio */
+  R.onair = function (live) {
+    return `<span class="m-onair" data-live="${live ? "true" : "false"}"><i class="m-onair__dot" aria-hidden="true"></i><b class="m-onair__text">${live ? "On air" : "Off air"}</b></span>`;
+  };
+
+  R.schedule = function () {
+    const sc = radio().schedule;
+    if (!sc || !sc.day) return "";
+    const di = DAY_INDEX[String(sc.day).slice(0, 3).toLowerCase()];
+    return `${DAY_PLURAL[di] || esc(sc.day)} · ${esc(sc.time || "")}${sc.city ? " " + esc(sc.city) : ""}${sc.sample ? ` <span class="m-flag">Sample</span>` : ""}`;
+  };
+
+  R.episodes = function (limit) {
+    const all = episodes();
+    const list = all.slice(0, limit || undefined);
+    if (!list.length) return `<p class="m-empty">First episode soon.</p>`;
+    return `<ol class="m-episodes">${list
+      .map((e, i) => {
+        const p = parts(e.date);
+        const code = esc(e.code || `UNK-${pad(all.length - i).padStart(3, "0")}`);
+        const play = e.url
+          ? `<button type="button" class="m-episode__play" data-play-episode="${i}" aria-label="Play ${code}"><span aria-hidden="true"></span></button>`
+          : `<span class="m-episode__soon">Soon</span>`;
+        return `<li class="m-episode${e.sample ? " is-sample" : ""}${e.url ? "" : " is-unreleased"}" data-episode="${i}">
+          <button type="button" class="m-episode__btn" data-show-episode="${code}">
+            <span class="m-episode__code">${code}</span>
+            <span class="m-episode__title">${esc(e.title || "Untitled")}</span>
+            <span class="m-episode__meta">${p.num}${e.guest ? " · " + esc(e.guest) : ""}${e.sample ? ` <span class="m-flag">Sample</span>` : ""}</span>
+          </button>${play}</li>`;
+      })
+      .join("")}</ol>`;
+  };
+
+  R.radioLatest = function () {
+    const all = episodes();
+    const i = Math.max(0, all.findIndex((e) => e.url));
+    const e = all[i];
+    if (!e) return `<p class="m-empty">First episode soon.</p>`;
+    const p = parts(e.date);
+    return `<div class="m-radio-latest" data-episode="${i}">
+      <span class="m-radio-latest__label">Latest episode</span>
+      <button type="button" class="m-radio-latest__open" data-show-episode="${esc(e.code)}">
+        <span class="m-radio-latest__code">${esc(e.code)}</span>
+        <span class="m-radio-latest__title">${esc(e.title || "")}</span>
+        <span class="m-radio-latest__meta">${p.num}${e.guest ? " · " + esc(e.guest) : ""}${e.sample ? ` <span class="m-flag">Sample</span>` : ""}</span>
+      </button>
+      ${e.url ? `<button type="button" class="m-radio-latest__play" data-play-episode="${i}"><span class="m-radio-latest__icon" aria-hidden="true"></span><span>Play episode</span></button>` : ""}
+    </div>`;
+  };
+
+  R.tracklist = function (e) {
+    const t = (e && e.tracklist) || [];
+    if (!t.length) return `<p class="m-empty">Tracklist after the broadcast.</p>`;
+    return `<ol class="m-tracklist">${t.map((line, k) => `<li><span class="m-tracklist__no">${pad(k + 1)}</span><span class="m-tracklist__track">${esc(line)}</span></li>`).join("")}</ol>`;
+  };
+
+  R.radioStatusBlock = function () {
+    const r = radio();
+    const b = broadcast(Date.now());
+    const where = [r.station, r.frequency].filter(Boolean).map(esc).join(" · ");
+    return `<div class="m-radio__status">
+      <div class="m-radio__row">${R.onair(b && b.live)}<span class="m-radio__schedule">${R.schedule()}</span></div>
+      <div class="m-radio__row"><span class="m-radio__label" data-m="radio-countdown-label">${b && b.live ? "On air · ends in" : "Next broadcast in"}</span><span class="m-radio__cd" data-m="radio-countdown"></span></div>
+      <div class="m-radio__row"><span class="m-radio__label">Your time</span><span class="m-radio__next" data-m="radio-next"></span></div>
+      ${where ? `<div class="m-radio__row"><span class="m-radio__label">On</span><span>${where}</span></div>` : ""}
+      ${r.live && r.live.url ? `<div class="m-radio__row">${ext(r.live.url, "Listen live ↗")}</div>` : ""}
+    </div>`;
+  };
+
+  R.radio = function () {
+    const r = radio();
+    return `<div class="m-radio">
+      <header class="m-radio__head">
+        <p class="m-radio__logo m-unknown">${esc(r.name || "UNKNOWN")}</p>
+        <p class="m-radio__desc">${esc(r.descriptor || "Radio show")}${r.host ? " · Hosted by " + esc(r.host) : ""}</p>
+        ${r.tagline ? `<p class="m-radio__tagline">${esc(r.tagline)}</p>` : ""}
+      </header>
+      ${R.radioStatusBlock()}
+      <h3 class="m-radio__sub">Episodes</h3>
+      ${R.episodes()}
+    </div>`;
+  };
+
+  R.episode = function (code) {
+    const all = episodes();
+    const i = all.findIndex((e) => e.code === code);
+    const e = all[i];
+    if (!e) return `<p class="m-empty">Episode not found.</p>`;
+    const p = parts(e.date);
+    const older = all[i + 1];
+    const newer = all[i - 1];
+    return `<article class="m-ep" data-episode="${i}">
+      <p class="m-ep__meta"><span class="m-unknown m-ep__show">${esc(radio().name || "UNKNOWN")}</span><span>${esc(e.code)}</span><time datetime="${esc(e.date)}">${p.d} ${p.m} ${p.y}</time>${e.length ? `<span>${esc(e.length)}</span>` : ""}${e.sample ? `<span class="m-flag">Sample</span>` : ""}</p>
+      <h2 class="m-ep__title">${esc(e.title || "Untitled")}</h2>
+      ${e.guest ? `<p class="m-ep__guest">${esc(e.guest)}</p>` : ""}
+      <div class="m-ep__actions">
+        ${e.url ? `<button type="button" class="m-ep__play" data-play-episode="${i}"><span class="m-ep__icon" aria-hidden="true"></span><span>Play episode</span></button>${ext(e.url, "Open on SoundCloud ↗")}` : `<span class="m-ep__soon">Recording not uploaded yet</span>`}
+      </div>
+      <h3 class="m-ep__sub">Tracklist</h3>
+      ${R.tracklist(e)}
+      <nav class="m-reader__nav">
+        ${older ? `<button type="button" data-show-episode="${esc(older.code)}">← ${esc(older.code)} ${esc(older.title || "")}</button>` : "<span></span>"}
+        ${newer ? `<button type="button" data-show-episode="${esc(newer.code)}">${esc(newer.code)} ${esc(newer.title || "")} →</button>` : "<span></span>"}
+      </nav></article>`;
+  };
+
   R.post = function (slug) {
     const all = posts();
     const i = all.findIndex((p) => p.slug === slug);
@@ -214,7 +367,7 @@
 
   /* ---------- SoundCloud deck (one player for the whole page) ---------- */
   let deck = null;
-  let playing = -1;
+  let playing = { kind: "", i: -1 };
 
   function buildDeck(el) {
     deck = el;
@@ -240,9 +393,19 @@
     const list = sets();
     if (i === "first") i = list.findIndex((s) => s.url);
     i = Number(i);
-    const s = list[i];
+    playItem(list[i], "set", i);
+  }
+
+  function playEpisode(i) {
+    i = Number(i);
+    const e = episodes()[i];
+    if (!e) return;
+    playItem({ url: e.url, code: `${radio().name || "UNKNOWN"} ${e.code || ""}`.trim(), title: e.title }, "episode", i);
+  }
+
+  function playItem(s, kind, i) {
     if (!s || !s.url || !deck) return;
-    playing = i;
+    playing = { kind, i };
     const src =
       "https://w.soundcloud.com/player/?url=" + encodeURIComponent(s.url) +
       "&color=%23" + scColor() + "&inverse=true&auto_play=true&show_user=true";
@@ -251,25 +414,28 @@
       : `<iframe title="SoundCloud player: ${esc(s.title || s.code)}" src="${src}" height="20" scrolling="no" frameborder="no" allow="autoplay"></iframe>`;
     $(".m-deck__title", deck).textContent = `${s.code ? s.code + " — " : ""}${s.title || "Set"}`;
     deck.dataset.state = "playing";
+    deck.dataset.kind = kind;
     root.classList.add("is-playing");
     markPlaying();
   }
 
   function stop() {
     if (!deck) return;
-    playing = -1;
+    playing = { kind: "", i: -1 };
     $(".m-deck__frame", deck).innerHTML = "";
     deck.dataset.state = "idle";
+    delete deck.dataset.kind;
     root.classList.remove("is-playing");
     markPlaying();
   }
 
   function markPlaying() {
-    $$("[data-set]").forEach((li) => li.classList.toggle("is-playing", Number(li.dataset.set) === playing));
+    $$("[data-set]").forEach((li) => li.classList.toggle("is-playing", playing.kind === "set" && Number(li.dataset.set) === playing.i));
+    $$("[data-episode]").forEach((li) => li.classList.toggle("is-playing", playing.kind === "episode" && Number(li.dataset.episode) === playing.i));
   }
 
   /* ---------- sheet (expanded view of any module) ---------- */
-  const TITLES = { sets: "Sets", videos: "Visuals", gigs: "Dates", posts: "Transmissions", post: "Transmission", insta: "Instagram", juliet: "Juliet" };
+  const TITLES = { sets: "Sets", videos: "Visuals", gigs: "Dates", posts: "Transmissions", post: "Transmission", insta: "Instagram", juliet: "Juliet", radio: "Radio", episode: "Episode" };
   let sheet, sheetBody, sheetTitle, lastFocus, closeTimer;
   let pushed = 0; // history entries this page added for open sheets
 
@@ -292,6 +458,10 @@
         return `<div class="m-sheet__insta"><p class="m-sheet__handles">${R.handles()}</p>${R.insta()}</div>`;
       case "juliet":
         return R.juliet();
+      case "radio":
+        return R.radio();
+      case "episode":
+        return R.episode(arg);
       default:
         return "";
     }
@@ -304,6 +474,7 @@
     sheet.dataset.type = type;
     sheetTitle.textContent = TITLES[type];
     sheetBody.innerHTML = sheetContent(type, arg);
+    tick();
     sheetBody.scrollTop = 0;
     markPlaying();
     sheet.hidden = false;
@@ -312,7 +483,7 @@
     const closeBtn = $("[data-m='sheet-close']", sheet);
     if (closeBtn) closeBtn.focus({ preventScroll: true });
     if (!fromHistory) {
-      const hash = type === "post" ? `post-${arg}` : type === "videos" && arg ? `videos-${arg}` : type;
+      const hash = type === "post" ? `post-${arg}` : type === "episode" ? `episode-${arg}` : type === "videos" && arg ? `videos-${arg}` : type;
       try { history.pushState({ sheet: type, arg }, "", "#" + hash); pushed++; } catch (e) { /* sandboxed */ }
     }
   }
@@ -339,7 +510,8 @@
     if (!h) return close(true);
     if (h.startsWith("post-")) return open("post", h.slice(5), true);
     if (h.startsWith("videos-")) return open("videos", h.slice(7), true);
-    if (TITLES[h] && h !== "post") return open(h, undefined, true);
+    if (h.startsWith("episode-")) return open("episode", h.slice(8), true);
+    if (TITLES[h] && h !== "post" && h !== "episode") return open(h, undefined, true);
   }
 
   /* ---------- quote rotator ---------- */
@@ -399,6 +571,30 @@
       const h = Math.floor(s / 3600); s -= h * 3600;
       const m = Math.floor(s / 60); s -= m * 60;
       el.innerHTML = `<span class="m-cd"><b>${pad(d)}</b><i>D</i></span><span class="m-cd"><b>${pad(h)}</b><i>H</i></span><span class="m-cd"><b>${pad(m)}</b><i>M</i></span><span class="m-cd"><b>${pad(s)}</b><i>S</i></span>`;
+    });
+    // UNKNOWN radio: on-air state, next broadcast and countdown
+    const b = broadcast(now.getTime());
+    root.classList.toggle("radio-live", !!(b && b.live));
+    $$("[data-m='radio-status']").forEach((el) => {
+      const live = !!(b && b.live);
+      if (el.dataset.live !== String(live)) { el.dataset.live = String(live); el.innerHTML = R.onair(live); }
+    });
+    $$("[data-m='radio-countdown-label']").forEach((el) => {
+      el.textContent = b && b.live ? (el.dataset.liveText || "On air · ends in") : (el.dataset.offText || "Next broadcast in");
+    });
+    $$("[data-m='radio-countdown']").forEach((el) => {
+      if (!b) { el.textContent = "Schedule soon"; return; }
+      let s = Math.max(0, Math.floor(((b.live ? b.end : b.next) - now.getTime()) / 1000));
+      const d = Math.floor(s / 86400); s -= d * 86400;
+      const h = Math.floor(s / 3600); s -= h * 3600;
+      const m = Math.floor(s / 60); s -= m * 60;
+      el.innerHTML = `${d ? `<span class="m-cd"><b>${pad(d)}</b><i>D</i></span>` : ""}<span class="m-cd"><b>${pad(h)}</b><i>H</i></span><span class="m-cd"><b>${pad(m)}</b><i>M</i></span><span class="m-cd"><b>${pad(s)}</b><i>S</i></span>`;
+    });
+    $$("[data-m='radio-next']").forEach((el) => {
+      if (!b || !b.next) { el.textContent = ""; return; }
+      const t = new Date(b.live ? b.start : b.next);
+      const txt = `${DAYS[t.getDay()]} ${pad(t.getDate())} ${MONTHS[t.getMonth()]} · ${pad(t.getHours())}:${pad(t.getMinutes())}`;
+      if (el.textContent !== txt) el.textContent = txt;
     });
     tickers.forEach((fn) => fn(now));
   }
@@ -467,6 +663,26 @@
           break;
         }
         case "year": el.textContent = new Date().getFullYear(); break;
+        case "radio-name": el.textContent = radio().name || "UNKNOWN"; break;
+        case "radio-desc": el.textContent = radio().descriptor || "Radio show"; break;
+        case "radio-host": el.textContent = radio().host || ""; break;
+        case "radio-tagline": el.textContent = radio().tagline || ""; break;
+        case "radio-schedule": el.innerHTML = R.schedule(); break;
+        case "radio-station": {
+          const r = radio();
+          const where = [r.station, r.frequency].filter(Boolean).join(" · ");
+          el.textContent = where;
+          el.hidden = !where;
+          break;
+        }
+        case "radio-live-link": {
+          const u = radio().live && radio().live.url;
+          if (u) el.innerHTML = ext(u, el.dataset.label || "Listen live ↗"); else el.hidden = true;
+          break;
+        }
+        case "radio-latest": el.innerHTML = R.radioLatest(); break;
+        case "episodes": el.innerHTML = R.episodes(limit); break;
+        case "count-episodes": el.textContent = pad(episodes().length); break;
       }
     });
 
@@ -480,13 +696,15 @@
   /* ---------- events ---------- */
   function bind() {
     document.addEventListener("click", (e) => {
-      const t = e.target.closest("[data-play],[data-video],[data-post],[data-open],[data-m='sheet-close']");
+      const t = e.target.closest("[data-play],[data-play-episode],[data-show-episode],[data-video],[data-post],[data-open],[data-m='sheet-close']");
       if (!t) {
         if (sheet && !sheet.hidden && e.target === sheet) close();
         return;
       }
       if (t.matches("[data-m='sheet-close']")) return close();
       if (t.dataset.play != null) return play(t.dataset.play);
+      if (t.dataset.playEpisode != null) return playEpisode(t.dataset.playEpisode);
+      if (t.dataset.showEpisode != null) return open("episode", t.dataset.showEpisode);
       if (t.dataset.video != null) return open("videos", t.dataset.video);
       if (t.dataset.post != null) return open("post", t.dataset.post);
       if (t.dataset.open) return open(t.dataset.open);
@@ -503,7 +721,8 @@
 
   const M = {
     data: D, $, $$, esc, asset, pad, parts, reduced, finePointer, desktopQuery,
-    upcomingGigs, render: R, play, stop, open, close, fitBoard, parallax,
+    upcomingGigs, render: R, play, playEpisode, stop, open, close, fitBoard, parallax,
+    broadcast, episodes,
     onTick: (fn) => tickers.push(fn), scale: 1,
   };
   window.M = M;
