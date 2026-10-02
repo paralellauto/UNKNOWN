@@ -81,7 +81,7 @@
   --sat: env(safe-area-inset-top, 0px);
   --sab: env(safe-area-inset-bottom, 0px);
   --dock-h: 56px;
-  --strip-h: 148px;
+  --strip-h: 152px;
   --strip-gap: 8px;
   color-scheme: dark;
 }
@@ -203,16 +203,19 @@ button.m-video__btn:hover .m-video__title { color: var(--amber); }
 .m-vplayer__note { min-width: 0; font: 400 9.5px/11px var(--f-meta); letter-spacing: .04em; color: var(--paper-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .m-vplayer[data-state="playing"] .m-vplayer__title { color: var(--amber); }
 .m-vplayer__actions { flex: none; display: flex; align-items: center; gap: 10px; }
-.m-vplayer__yt, .m-vplayer__more { font: 500 10px/1 var(--f-meta); letter-spacing: .14em; text-transform: uppercase; color: var(--amber); white-space: nowrap; transition: color .15s, text-decoration-color .15s;
+.m-vplayer__more { font: 500 10px/1 var(--f-meta); letter-spacing: .14em; text-transform: uppercase; color: var(--amber); white-space: nowrap; transition: color .15s, text-decoration-color .15s;
   text-decoration: underline 1px; text-decoration-color: var(--amber-line); text-underline-offset: 3px; }
-.m-vplayer__yt:hover, .m-vplayer__more:hover { color: var(--paper); text-decoration-color: currentColor; }
+.m-vplayer__more:hover { color: var(--paper); text-decoration-color: currentColor; }
 /* two or more picks: the engine adds "All picks", so the title gets the whole first line and the links share the note's line */
 .m-vplayer__bar:has(.m-vplayer__more) { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 8px; row-gap: 3px; align-items: end; }
 .m-vplayer__bar:has(.m-vplayer__more) .m-vplayer__text { display: contents; }
 .m-vplayer__bar:has(.m-vplayer__more) .m-vplayer__title { grid-column: 1 / -1; }
 .m-vplayer__bar:has(.m-vplayer__more) .m-vplayer__actions { gap: 8px; }
 .m-vplayer__more::before { content: "·"; margin-right: 8px; color: var(--amber-dim); }
-.m-vplayer__bar:has(.m-vplayer__more) :is(.m-vplayer__yt, .m-vplayer__more) { letter-spacing: .12em; }
+.m-vplayer__bar:has(.m-vplayer__more) .m-vplayer__more { letter-spacing: .12em; }
+/* no note (no channel yet, none in content.js): "All picks" keeps its place at the right end of row 2, without the stray separator */
+.m-vplayer__bar:has(.m-vplayer__more) .m-vplayer__actions { grid-column: 2; grid-row: 2; justify-self: end; }
+.m-vplayer__bar:has(.m-vplayer__note[hidden]) .m-vplayer__more::before { content: none; }
 
 /* instagram */
 .m-ig { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
@@ -309,6 +312,14 @@ button.m-video__btn:hover .m-video__title { color: var(--amber); }
 .sheet .m-gig__y { display: block; flex-basis: 100%; font: 400 9px/1 var(--f-hud); font-stretch: 87.5%; letter-spacing: .1em; color: var(--amber); }
 .sheet .m-gig__city { font-size: 22px; }
 .m-sheet__foot { margin: 22px 0 0; }
+/* sparse sheets (episodes, dates, Instagram) are as tall as what they hold, up to the usual cap; the body still scrolls */
+.sheet:is([data-type="sets"], [data-type="gigs"], [data-type="insta"]) .sheet__frame { height: auto; max-height: min(86vh, 780px); }
+.sheet:is([data-type="sets"], [data-type="gigs"], [data-type="insta"]) .sheet__body { flex: 0 1 auto; }
+/* no dates announced: the Dates.cal TBA state at sheet size (TBA tile, Archivo line, booking link under it) */
+.m-sheet__gigs:has(> .m-empty) { display: grid; grid-template-columns: 72px minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 20px; row-gap: 10px; align-items: center; padding: 22px 0 8px; }
+.m-sheet__gigs:has(> .m-empty)::before { content: "TBA"; grid-row: 1 / 3; width: 72px; height: 72px; display: grid; place-items: center; border: 1px solid var(--amber-line); background: rgba(226,134,15,.06); font: 600 30px/1 var(--f-num); letter-spacing: .04em; color: var(--amber); }
+.m-sheet__gigs > .m-empty { margin: 0; align-self: end; font: 600 26px/1.1 var(--f-display); font-stretch: 85%; letter-spacing: .01em; text-transform: none; color: var(--paper); }
+.m-sheet__gigs:has(> .m-empty) > .m-sheet__foot { margin: 0; align-self: start; }
 /* sheet: post reader */
 .m-reader { max-width: 64ch; margin: 0 auto; padding-top: 22px; }
 .m-reader__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin: 0; font: 400 9.5px/1.25 var(--f-hud); font-stretch: 87.5%; letter-spacing: .1em; text-transform: uppercase; color: var(--amber); }
@@ -331,7 +342,7 @@ button.m-video__btn:hover .m-video__title { color: var(--amber); }
 .m-player__link img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .55; }
 .m-player__link span { position: relative; padding: 10px 16px; background: rgba(0,0,0,.6); font: 500 11px/1 var(--f-meta); letter-spacing: .16em; text-transform: uppercase; color: var(--amber); }
 .m-player__info { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 16px; margin-top: 14px; }
-.m-player__title { margin: 0; font: 500 28px/1 var(--f-num); text-transform: uppercase; color: var(--paper); }
+.m-player__title { margin: 0; font: 500 28px/1.08 var(--f-num); text-transform: uppercase; color: var(--paper); text-wrap: balance; }
 .m-player__note { margin: 0; font: 400 9.5px/1.25 var(--f-hud); font-stretch: 87.5%; letter-spacing: .1em; text-transform: uppercase; color: var(--amber); }
 .m-player__info .m-ext { margin-left: auto; }
 .m-player__more { margin-top: 22px; border-top: 1px solid var(--amber-line); }
@@ -468,6 +479,7 @@ button.m-video__btn:hover .m-video__title { color: var(--amber); }
   /* next date */
   .next { position: absolute; left: 16px; right: 16px; top: calc(var(--sat) + 59px); height: 14px; display: flex; align-items: center; gap: 10px; font: 500 9.5px/1 var(--f-meta); letter-spacing: .14em; text-transform: uppercase; color: var(--paper-dim); white-space: nowrap; overflow: hidden; }
   .next__gig { display: flex; align-items: center; gap: 8px; min-width: 0; color: var(--paper); }
+  .next:has(.m-tba) > span:first-child { display: none; }
   .m-next__city { min-width: 0; overflow: hidden; text-overflow: ellipsis; line-height: 1.4; } /* taller line box so the ellipsis clip keeps the É accent */
 
   /* Juliet */
@@ -497,7 +509,7 @@ button.m-video__btn:hover .m-video__title { color: var(--amber); }
   /* UNKNOWN strip: the console re-laid as one black band above the dock */
   .console {
     position: absolute; left: 0; right: 0; bottom: calc(var(--dock-h) + var(--strip-gap) + var(--sab)); height: var(--strip-h);
-    display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: 36px 8px 10px 4px 20px 2px 44px; column-gap: 12px;
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: 36px 8px 10px 4px 20px 6px 44px; column-gap: 12px;
     padding: 12px 16px; background: var(--slab); box-shadow: inset 0 1px 0 var(--amber-edge); transition: box-shadow 1.2s var(--ease);
   }
   .radio-live .console { box-shadow: inset 0 1px 0 var(--signal); }
@@ -532,11 +544,11 @@ button.m-video__btn:hover .m-video__title { color: var(--amber); }
 
   /* deck: hidden while idle; while playing it covers the strip's latest row exactly (and rises above sheets) */
   .m-deck { display: none; }
-  .m-deck[data-state="playing"] { display: block; position: fixed; z-index: 61; left: 0; right: 0; bottom: calc(var(--dock-h) + var(--strip-gap) + 12px + var(--sab)); height: 44px; padding: 5px 16px; background: var(--slab); border-top: 1px solid var(--seam); }
+  .m-deck[data-state="playing"] { display: block; position: fixed; z-index: 61; left: 0; right: 0; bottom: calc(var(--dock-h) + var(--strip-gap) + 12px + var(--sab)); height: 44px; padding: 5px 16px; background: linear-gradient(var(--seam), var(--seam)) var(--rule-x, 16px) 0 / calc(100% - 2 * var(--rule-x, 16px)) 1px no-repeat, var(--slab); }
   .m-deck__frame { margin-top: 4px; }
   html.is-playing .console .latest { visibility: hidden; }
   html.is-playing .sheet__body { padding-bottom: 60px; }
-  html.has-sheet .m-deck[data-state="playing"] { left: 0; right: 0; bottom: 0; width: auto; margin: 0; height: calc(44px + var(--sab)); padding: 5px 16px calc(5px + var(--sab)); }
+  html.has-sheet .m-deck[data-state="playing"] { --rule-x: 0px; left: 0; right: 0; bottom: 0; width: auto; margin: 0; height: calc(44px + var(--sab)); padding: 5px 16px calc(5px + var(--sab)); }
   /* Stop: a full-height column on the right edge (a real tap target), the iframe row ends before it */
   .m-deck__live { position: relative; padding-right: 56px; }
   .m-deck__stop { position: absolute; top: -5px; bottom: -5px; right: -16px; width: 64px; display: flex; align-items: center; justify-content: center; box-shadow: inset 1px 0 0 var(--amber-line); }
@@ -556,7 +568,8 @@ button.m-video__btn:hover .m-video__title { color: var(--amber); }
   /* sheets go full screen */
   /* a definite track: with the implicit auto row, height:100% resolved against the content and the body never scrolled */
   .sheet { padding: 0; grid-template: minmax(0, 1fr) / minmax(0, 1fr); }
-  .sheet__frame { width: 100%; height: 100%; border: 0; padding-top: var(--sat); padding-bottom: var(--sab); }
+  .sheet__frame, .sheet:is([data-type="sets"], [data-type="gigs"], [data-type="insta"]) .sheet__frame { width: 100%; height: 100%; max-height: none; border: 0; padding-top: var(--sat); padding-bottom: var(--sab); }
+  .m-player__title { font-size: 24px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
   .sheet__frame > .corner { display: none; }
   .sheet__head { padding: 14px 16px; }
   .sheet__title { font-size: 32px; }
@@ -613,7 +626,7 @@ button.m-video__btn:hover .m-video__title { color: var(--amber); }
     .m-radio-latest__play, .console__latest.no-play .latest__archive { width: 48px; height: 48px; }
     .m-radio-latest__code { font-size: 10.5px; }
     .m-radio-latest__title { font-size: 20px; }
-    .m-deck[data-state="playing"] { right: 0; margin: 0 auto; width: calc(min(640px, 100% - 32px) - 40px); height: 48px; padding: 7px 0; }
+    .m-deck[data-state="playing"] { --rule-x: 0px; right: 0; margin: 0 auto; width: calc(min(640px, 100% - 32px) - 40px); height: 48px; padding: 7px 0; }
     .m-deck__now { font-size: 10.5px; }
     .m-deck__stop { top: -7px; bottom: -7px; right: 0; width: 56px; }
     .dock :is(button, a) { font-size: 11px; gap: 7px; }
@@ -643,7 +656,7 @@ button.m-video__btn:hover .m-video__title { color: var(--amber); }
     .directive { top: calc(var(--sat) + 52px); bottom: calc(var(--dock-h) + var(--strip-gap) + var(--strip-h) + var(--sab)); display: flex; flex-direction: column; justify-content: center; }
     .m-quote__text { font-size: 20px; }
     .console { right: 0; margin: 0 auto; width: min(640px, 100% - 32px); }
-    .m-deck[data-state="playing"] { right: 0; margin: 0 auto; width: calc(min(640px, 100% - 32px) - 32px); padding: 5px 0; }
+    .m-deck[data-state="playing"] { --rule-x: 0px; right: 0; margin: 0 auto; width: calc(min(640px, 100% - 32px) - 32px); padding: 5px 0; }
     .m-deck__stop { right: 0; width: 56px; }
   }
   @media (max-height: 360px) {
@@ -722,12 +735,12 @@ button.m-video__btn:hover .m-video__title { color: var(--amber); }
   /* windows: .win (drag: left/top) > .win__float (parallax) > .win__drift (drift) > .win__box (the only fill) */
   /* Every window is as tall as its content; the page script stacks them by setting --y (a drag writes an inline
      top, which wins; Realign clears it and the stack takes over again). The fallbacks are the one-episode, no-dates
-     stack. Left column 156–592: Episodes under the masthead, Transmissions on the floor line. Right column 64–596:
+     stack. Left column 156–596: Episodes under the masthead, Transmissions on the floor line. Right column 64–596:
      Dates at the top, Feed on the floor line, Visuals centred between. Neighbours keep >= 20px (12px at the drift −5
      and parallax Δd ≤ 3 extremes); 596 + 8 parallax still clears the console at 616. */
   .win { position: absolute; z-index: 6; width: 296px; }
   .w-sets  { left: 24px;  top: var(--y, 156px); }
-  .w-posts { left: 24px;  top: var(--y, 402px); }
+  .w-posts { left: 24px;  top: var(--y, 384px); }
   .w-gigs  { left: 960px; top: var(--y, 64px); }
   .w-video { left: 960px; top: var(--y, 225px); }
   .w-insta { left: 960px; top: var(--y, 526px); }
@@ -782,10 +795,10 @@ button.m-video__btn:hover .m-video__title { color: var(--amber); }
   .w-gigs .m-gig { height: 48px; }
   .gigs__book { display: none; }
   .gigs__main:has(.m-empty) { height: 64px; display: grid; grid-template-columns: 40px minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 12px; row-gap: 7px; align-content: center; padding: 0 12px; }
-  .gigs__main:has(.m-empty)::before { content: "--"; grid-row: 1 / 3; align-self: center; width: 40px; height: 40px; display: grid; place-items: center; border: 1px dashed var(--amber-line); font: 600 20px/1 var(--f-num); letter-spacing: .06em; color: var(--amber-dim); }
+  .gigs__main:has(.m-empty)::before { content: "TBA"; grid-row: 1 / 3; align-self: center; width: 40px; height: 40px; display: grid; place-items: center; border: 1px solid var(--amber-line); background: rgba(226,134,15,.06); font: 600 17px/1 var(--f-num); letter-spacing: .04em; color: var(--amber); }
   .gigs__main:has(.m-empty) .win__body { padding: 0; }
   .w-gigs .gigs__main .m-empty { margin: 0; font: 600 15px/16px var(--f-display); font-stretch: 85%; letter-spacing: .01em; text-transform: none; color: var(--paper); white-space: nowrap; }
-  .gigs__main:has(.m-empty) .gigs__book { grid-column: 2; justify-self: start; display: block; font-size: 9.5px; line-height: 1; letter-spacing: .12em; }
+  .gigs__main:has(.m-empty) .gigs__book { grid-column: 2; justify-self: start; display: block; font-size: var(--f95); line-height: 1; letter-spacing: .12em; }
 
   /* Visuals.yt: the picture runs edge to edge (294 × 165.4, as wide as the column allows); the caption keeps room for
      a two-line title so the window does not change size when the real YouTube title arrives */
@@ -890,7 +903,7 @@ button.m-video__btn:hover .m-video__title { color: var(--amber); }
   .board .m-radio-latest__label, .board .m-radio-latest__code, .board .m-radio-latest__meta, .board .air__cd:not(:has(.m-cd)),
   .board .w-sets .m-episode__meta, .board .sets__all, .board .gigs__book, .board .ig-card__go { font-size: var(--f95); }
   .board .m-flag, .board .w-sets .m-episode__code, .board .w-sets .m-episode__soon, .board .m-vplayer__start::before, .board .m-vplayer__start::after, .board .m-gig__m, .board .m-gig__meta, .board .foot__cd .m-cd i { font-size: var(--f9); }
-  .board .m-ext, .board .m-vplayer__yt, .board .m-vplayer__more, .board .m-deck__go, .board .latest__archive, .board .air__cd .m-cd i, .board .m-radio-latest__play { font-size: var(--f10); }
+  .board .m-ext, .board .m-vplayer__more, .board .m-deck__go, .board .latest__archive, .board .air__cd .m-cd i, .board .m-radio-latest__play { font-size: var(--f10); }
 }
 
 /* =========================== REDUCED MOTION =========================== */
@@ -1112,7 +1125,11 @@ button.m-video__btn:hover .m-video__title { color: var(--amber); }
   } else $(".w-insta").hidden = true;
   var booking = (D.artist && D.artist.booking) || {};
   var bookEl = $(".gigs__book");
-  if (booking.url) { bookEl.href = booking.url; bookEl.textContent = (booking.label || "Bookings") + " ↗"; } else bookEl.remove();
+  if (booking.url) {
+    bookEl.href = booking.url;
+    bookEl.textContent = (booking.label || "Bookings") + " ↗";
+    bookEl.setAttribute("aria-label", (booking.label || "Bookings") + " (opens in a new tab)");
+  } else bookEl.remove();
   var scProfile = D.soundcloud && D.soundcloud.profile;
   var allSets = $(".sets__all");
   if (scProfile) allSets.href = scProfile; else allSets.remove();
@@ -1127,10 +1144,11 @@ button.m-video__btn:hover .m-video__title { color: var(--amber); }
   function layout() {
     if (!M.desktopQuery.matches) return;
     var sets = $(".w-sets"), posts = $(".w-posts"), gigs = $(".w-gigs"), video = $(".w-video"), ig = $(".w-insta");
-    // left: Episodes under the masthead; Transmissions on the floor line (592), or right under Episodes if that is lower
+    // left: Episodes under the masthead; Transmissions on the floor line (596, the same baseline as Feed.ig), or right
+    // under Episodes if that is lower
     var setsBottom = 156 + sets.offsetHeight;
     placeWin(sets, 156);
-    placeWin(posts, setsBottom + Math.max(GAP, (592 - setsBottom - posts.offsetHeight) / 2));
+    placeWin(posts, Math.max(setsBottom + GAP, 596 - posts.offsetHeight));
     // right: Dates at 64, Feed on the floor line (596), Visuals centred in what is left
     var gigsBottom = 64 + gigs.offsetHeight;
     placeWin(gigs, 64);
@@ -1144,6 +1162,19 @@ button.m-video__btn:hover .m-video__title { color: var(--amber); }
     $$(".win__box").forEach(function (b) { ro.observe(b); });
   }
   M.desktopQuery.addEventListener("change", layout);
+
+  /* ---------- deck: an episode's Stop says so; a keyboard press on "Play latest episode" lands on Stop, not <body> ---------- */
+  var deckEl = $("[data-m='deck']");
+  var viaKeys = false; // only a keyboard press moves focus: a tap must not leave a ring on Stop
+  document.addEventListener("keydown", function () { viaKeys = true; }, true);
+  document.addEventListener("pointerdown", function () { viaKeys = false; }, true);
+  if (deckEl) new MutationObserver(function () {
+    var stopBtn = $(".m-deck__stop", deckEl);
+    if (!stopBtn) return;
+    if (deckEl.dataset.kind === "episode" && stopBtn.getAttribute("aria-label") !== "Stop the episode") stopBtn.setAttribute("aria-label", "Stop the episode");
+    var ae = document.activeElement;
+    if (viaKeys && deckEl.dataset.state === "playing" && (!ae || ae === document.body || !ae.getClientRects().length) && stopBtn.getClientRects().length) stopBtn.focus({ preventScroll: true });
+  }).observe(deckEl, { attributes: true, attributeFilter: ["data-state", "data-kind"], childList: true, subtree: true });
 
   /* ---------- console: "01 episode", "03 episodes" ---------- */
   var countWord = $(".latest__count-w");
