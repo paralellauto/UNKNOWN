@@ -282,7 +282,7 @@
     const b = broadcast(Date.now());
     const where = [r.station, r.frequency].filter(Boolean).map(esc).join(" · ");
     return `<div class="m-radio__status">
-      <div class="m-radio__row">${R.onair(b && b.live)}<span class="m-radio__schedule">${R.schedule()}</span></div>
+      <div class="m-radio__row"><span data-m="radio-status" data-live="${b && b.live ? "true" : "false"}">${R.onair(b && b.live)}</span><span class="m-radio__schedule">${R.schedule()}</span></div>
       <div class="m-radio__row"><span class="m-radio__label" data-m="radio-countdown-label">${b && b.live ? "On air · ends in" : "Next broadcast in"}</span><span class="m-radio__cd" data-m="radio-countdown"></span></div>
       <div class="m-radio__row"><span class="m-radio__label">Your time</span><span class="m-radio__next" data-m="radio-next"></span></div>
       ${where ? `<div class="m-radio__row"><span class="m-radio__label">On</span><span>${where}</span></div>` : ""}
@@ -438,6 +438,7 @@
   const TITLES = { sets: "Sets", videos: "Visuals", gigs: "Dates", posts: "Transmissions", post: "Transmission", insta: "Instagram", juliet: "Juliet", radio: "Radio", episode: "Episode" };
   let sheet, sheetBody, sheetTitle, lastFocus, closeTimer;
   let pushed = 0; // history entries this page added for open sheets
+  let unwinding = false; // true while close() walks back through those entries
 
   function sheetContent(type, arg) {
     const sc = D.soundcloud || {};
@@ -499,9 +500,9 @@
     if (lastFocus && lastFocus.focus) lastFocus.focus({ preventScroll: true });
     if (fromHistory) return;
     try {
-      if (pushed > 0) history.go(-pushed);
+      if (pushed > 0) { unwinding = true; history.go(-pushed); }
       else if (location.hash) history.replaceState({}, "", location.pathname + location.search);
-    } catch (e) { /* sandboxed */ }
+    } catch (e) { unwinding = false; /* sandboxed */ }
     pushed = 0;
   }
 
@@ -713,6 +714,15 @@
       if (e.key === "Escape") close();
     });
     addEventListener("popstate", () => {
+      if (unwinding) {
+        // close() walked back to the entry the visitor arrived on; if that was a
+        // deep link (#radio, #post-…), drop the hash instead of reopening it.
+        unwinding = false;
+        if (location.hash) {
+          try { history.replaceState({}, "", location.pathname + location.search); } catch (e) { /* sandboxed */ }
+        }
+        return;
+      }
       pushed = Math.max(0, pushed - 1);
       openFromHash();
     });
@@ -727,7 +737,26 @@
   };
   window.M = M;
 
+  /* Preview the ON AIR look without waiting for the real slot: add ?onair=1 or #onair
+     to any page. Only the in-memory schedule changes; content.js stays as written. */
+  function previewOnAir() {
+    const q = /(^|[?&])onair=1(&|$)/.test(location.search.slice(1));
+    if (!q && location.hash !== "#onair") return;
+    const r = D.radio;
+    if (!r) return;
+    const start = new Date(Date.now() - 10 * 60000);
+    r.schedule = Object.assign({}, r.schedule, {
+      day: ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][start.getDay()],
+      time: `${pad(start.getHours())}:${pad(start.getMinutes())}`,
+      durationMin: Math.max(Number(r.schedule && r.schedule.durationMin) || 120, 60),
+      timezone: "", // the visitor's own zone
+      city: "",
+    });
+    root.classList.add("is-onair-preview");
+  }
+
   function init() {
+    previewOnAir();
     fill();
     bind();
     tick();

@@ -9,6 +9,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%2308070d'/%3E%3Cellipse cx='16' cy='16' rx='9' ry='11' fill='none' stroke='%23d4b07a' stroke-width='1.6'/%3E%3Ccircle cx='16' cy='16' r='1.6' fill='%23f2eef8'/%3E%3C/svg%3E">
 <link rel="preload" href="../assets/fonts/bodoni-moda-italic.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="../assets/fonts/jost.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="../assets/fonts/bebas-neue.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="../assets/fonts/fonts.css">
 <style>
 /* NOCTURNE — inside Juliet's lenses. Night sky, champagne gold and lens violet; a Didone masthead
@@ -59,7 +60,7 @@ img { display: block; max-width: 100%; }
 @keyframes sheen { from { background-position: 0% 0; } to { background-position: 100% 0; } }
 
 /* locket portrait + rings */
-.locket { position: absolute; z-index: 4; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 27vw + 48px); height: calc(100% - 27vw - 372px); min-height: 170px; max-height: 100vw; aspect-ratio: 4 / 5; transform: translateX(-50%); }
+.locket { position: absolute; z-index: 4; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 27vw + 48px); height: calc(100% - 27vw - 400px); min-height: 170px; max-height: 100vw; aspect-ratio: 4 / 5; transform: translateX(-50%); }
 .locket__frame { position: absolute; inset: 0; border-radius: 50%; padding: 7px; border: 1px solid rgba(212,176,122,.55); box-shadow: 0 0 90px 10px rgba(139,111,209,.28), inset 0 0 0 1px rgba(212,176,122,.12); }
 .locket__img { width: 100%; height: 100%; border-radius: 50%; overflow: hidden; border: 1px solid rgba(212,176,122,.8); }
 .locket__img img { width: 100%; height: 100%; object-fit: cover; object-position: 46% 40%; transform: scale(1.06); }
@@ -73,7 +74,7 @@ img { display: block; max-width: 100%; }
 .rings.front { clip-path: inset(50% 0 0 0); z-index: 2; }
 
 /* quote */
-.quote { position: absolute; z-index: 4; left: 24px; right: 24px; bottom: calc(150px + env(safe-area-inset-bottom, 0px)); margin: 0; text-align: center; transition: opacity .7s var(--ease), transform .7s var(--ease); }
+.quote { position: absolute; z-index: 4; left: 24px; right: 24px; bottom: calc(190px + env(safe-area-inset-bottom, 0px)); margin: 0; text-align: center; transition: opacity .7s var(--ease), transform .7s var(--ease); }
 .quote.is-out { opacity: 0; transform: translateY(6px); }
 .m-quote__text { margin: 0 auto; max-width: 26ch; font: italic 400 21px/1.3 var(--f-display); font-variation-settings: "opsz" 28; color: var(--star); text-wrap: balance; }
 .m-quote__text::before { content: "“"; } .m-quote__text::after { content: "”"; }
@@ -171,6 +172,127 @@ button.m-set__btn:hover .m-set__state::after { border-left-color: var(--night); 
 .m-cd b { font: 400 13px/1 var(--f-body); color: var(--star); font-variant-numeric: tabular-nums; }
 .m-cd i { font: 400 7px/1 var(--f-wide); font-style: normal; letter-spacing: .1em; color: var(--gold); }
 
+/* ---------- UNKNOWN · the radio show ---------- */
+/* the logotype: Bebas Neue, star-white like the station ident, with a faint gold halo */
+.m-unknown { font-family: "Bebas Neue", "Antonio", "Jost", sans-serif; font-weight: 400; font-style: normal; letter-spacing: .012em; text-transform: uppercase; color: var(--star); font-variation-settings: normal; }
+.m-onair { display: inline-flex; align-items: center; gap: 7px; padding: 4px 9px 3px 7px; border-radius: 99px; border: 1px solid rgba(242,238,248,.22); white-space: nowrap; }
+.m-onair__dot { width: 7px; height: 7px; border-radius: 50%; border: 1px solid rgba(242,238,248,.55); flex: none; }
+.m-onair__text { font: 400 8px/1 var(--f-wide); letter-spacing: .22em; text-transform: uppercase; color: var(--mist); }
+.m-onair[data-live="true"] { border-color: rgba(233,163,184,.75); background: rgba(233,163,184,.14); box-shadow: 0 0 18px -4px rgba(233,163,184,.6); }
+.m-onair[data-live="true"] .m-onair__dot { border: 0; background: #ff8fae; box-shadow: 0 0 6px 1px rgba(255,143,174,.9); animation: lamp 1.6s ease-in-out infinite; }
+.m-onair[data-live="true"] .m-onair__text { color: var(--star); }
+@keyframes lamp { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+
+/* the radio card (desktop board) */
+.c-radio { width: 316px; }
+.c-radio .card__head { padding-bottom: 0; }
+.c-radio .card__count { font: inherit; letter-spacing: normal; }
+.radio__mark { display: flex; align-items: flex-end; gap: 12px; width: 100%; text-align: left; }
+.radio__logo { display: block; flex: none; font-size: 58px; line-height: .86; padding-top: 2px; text-shadow: 0 0 28px rgba(212,176,122,.28); transition: color .3s, text-shadow .3s; }
+.radio__mark:hover .radio__logo { color: #fff7ea; text-shadow: 0 0 30px rgba(212,176,122,.55); }
+.radio__by { display: flex; flex-direction: column; gap: 5px; min-width: 0; padding-bottom: 4px; }
+.radio__by .label { font-size: 8px; letter-spacing: .26em; }
+.radio__host { font: italic 400 15px/1 var(--f-display); color: var(--star); }
+.radio__tag { margin: 8px 0 0; font: italic 400 13.5px/1.3 var(--f-display); font-variation-settings: "opsz" 14; color: var(--mist); text-wrap: balance; }
+.radio__times { display: grid; grid-template-columns: auto 1fr; align-items: center; column-gap: 10px; row-gap: 6px; margin: 8px 0 0; padding-top: 8px; border-top: 1px solid rgba(212,176,122,.16); }
+.radio__times dt { white-space: nowrap; font: 400 8px/1.2 var(--f-wide); letter-spacing: .22em; text-transform: uppercase; color: var(--gold); }
+.radio__times dd { margin: 0; justify-self: end; text-align: right; font: 400 11.5px/1.2 var(--f-body); letter-spacing: .07em; text-transform: uppercase; color: var(--star); white-space: nowrap; }
+.radio__times dd .m-flag { margin-left: 4px; }
+.radio__times .m-cd { margin-left: 6px; }
+.radio__times .m-cd:first-child { margin-left: 0; }
+
+/* latest episode (module) */
+.m-radio-latest { display: grid; grid-template-columns: 1fr auto; column-gap: 12px; align-items: center; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(212,176,122,.16); }
+.m-radio-latest__label { grid-column: 1 / -1; margin-bottom: 5px; font: 400 8px/1 var(--f-wide); letter-spacing: .22em; text-transform: uppercase; color: var(--gold); }
+.m-radio-latest__open { display: grid; grid-template-columns: auto 1fr; column-gap: 8px; row-gap: 4px; align-items: baseline; min-width: 0; text-align: left; }
+.m-radio-latest__code { white-space: nowrap; font: 400 18px/1 "Bebas Neue", var(--f-body); letter-spacing: .03em; color: var(--gold); }
+.m-radio-latest__title { min-width: 0; font: italic 400 17px/1.15 var(--f-display); font-variation-settings: "opsz" 24; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.m-radio-latest__meta { grid-column: 1 / -1; min-width: 0; font: 400 10.5px/1.3 var(--f-body); letter-spacing: .02em; color: var(--mist); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.m-radio-latest__open:hover .m-radio-latest__title { color: var(--gold); }
+.m-radio-latest__play { position: relative; width: 36px; height: 36px; border-radius: 50%; border: 1px solid rgba(212,176,122,.6); color: var(--gold); transition: background .25s, color .25s; }
+.m-radio-latest__play > span:last-child { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.m-radio-latest__icon { position: absolute; left: 14px; top: 12px; border-left: 9px solid currentColor; border-top: 6px solid transparent; border-bottom: 6px solid transparent; }
+.m-radio-latest__play:hover { background: var(--gold); color: var(--night); }
+.m-radio-latest.is-playing .m-radio-latest__title { color: var(--rose); }
+.m-radio-latest.is-playing .m-radio-latest__play { border-color: var(--rose); color: var(--rose); animation: halo var(--beat, .45s) ease-out infinite; }
+.m-radio-latest.is-playing .m-radio-latest__icon { left: 14px; top: 14px; width: 7px; height: 7px; border: 0; border-radius: 50%; background: currentColor; }
+
+/* episode list (sheet, and any module that lists episodes) */
+.m-episodes { list-style: none; margin: 0; padding: 0; }
+.m-episode { display: grid; grid-template-columns: 1fr auto; column-gap: 14px; align-items: center; }
+.m-episode + .m-episode { border-top: 1px solid rgba(242,238,248,.08); }
+.m-episode__btn { display: grid; grid-template-columns: 74px 1fr; column-gap: 14px; row-gap: 4px; align-items: baseline; min-width: 0; padding: 12px 0; text-align: left; }
+.m-episode__code { grid-row: 1 / 3; align-self: center; white-space: nowrap; font: 400 26px/1 "Bebas Neue", var(--f-body); letter-spacing: .03em; color: var(--gold); }
+.m-episode__title { min-width: 0; font: italic 400 20px/1.15 var(--f-display); font-variation-settings: "opsz" 28; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.m-episode__meta { min-width: 0; font: 400 11px/1.3 var(--f-body); letter-spacing: .06em; color: var(--mist); }
+.m-episode__btn:hover .m-episode__title { color: var(--gold); }
+.m-episode__play { position: relative; width: 34px; height: 34px; border-radius: 50%; border: 1px solid rgba(212,176,122,.6); color: var(--gold); transition: background .25s, color .25s; }
+.m-episode__play span { position: absolute; left: 13px; top: 11px; border-left: 9px solid currentColor; border-top: 6px solid transparent; border-bottom: 6px solid transparent; }
+.m-episode__play:hover { background: var(--gold); color: var(--night); }
+.m-episode__soon { padding: 5px 9px 4px; border-radius: 99px; border: 1px dashed rgba(242,238,248,.25); font: 400 7px/1 var(--f-wide); letter-spacing: .22em; text-transform: uppercase; color: var(--mist); }
+.m-episode.is-unreleased .m-episode__title { color: rgba(242,238,248,.62); }
+.m-episode.is-unreleased .m-episode__code { color: rgba(212,176,122,.6); }
+.m-episode.is-playing .m-episode__title, .m-episode.is-playing .m-episode__code { color: var(--rose); }
+.m-episode.is-playing .m-episode__play { border-color: var(--rose); color: var(--rose); animation: halo var(--beat, .45s) ease-out infinite; }
+.m-episode.is-playing .m-episode__play span { left: 13px; top: 13px; width: 6px; height: 6px; border: 0; border-radius: 50%; background: currentColor; }
+
+/* radio sheet */
+.m-radio { padding-top: 4px; }
+.m-radio__head { display: grid; grid-template-columns: auto 1fr; column-gap: 26px; row-gap: 8px; align-items: end; }
+.m-radio__logo { grid-row: 1 / 3; margin: 0; font-size: 116px; line-height: .84; text-shadow: 0 0 46px rgba(212,176,122,.3); }
+.m-radio__desc { margin: 0; font: 400 8.5px/1.4 var(--f-wide); letter-spacing: .28em; text-transform: uppercase; color: var(--gold); }
+.m-radio__tagline { margin: 0 0 4px; font: italic 400 21px/1.25 var(--f-display); font-variation-settings: "opsz" 28; color: var(--star); text-wrap: balance; }
+.m-radio__status { display: grid; grid-template-columns: repeat(3, auto); justify-content: space-between; gap: 14px 28px; margin: 26px 0 8px; padding: 16px 22px; border-radius: 26px 6px 26px 6px; border: 1px solid rgba(212,176,122,.22); background: rgba(139,111,209,.06); }
+.m-radio__row { display: flex; flex-direction: column; align-items: flex-start; gap: 9px; font: 400 13px/1.2 var(--f-body); letter-spacing: .1em; text-transform: uppercase; color: var(--star); }
+.m-radio__row:nth-child(n+4) { grid-column: 1 / -1; flex-direction: row; align-items: center; }
+.m-radio__label { font: 400 8.5px/1 var(--f-wide); letter-spacing: .24em; color: var(--gold); }
+.m-radio__schedule .m-flag { margin-left: 6px; }
+.m-radio__cd .m-cd { margin-left: 6px; } .m-radio__cd .m-cd:first-child { margin-left: 0; }
+.m-radio__cd .m-cd b { font-size: 15px; }
+.m-radio__sub, .m-ep__sub { margin: 28px 0 4px; font: 400 8px/1 var(--f-wide); letter-spacing: .3em; text-transform: uppercase; color: var(--gold); }
+.sheet .m-episode__title { font-size: 24px; }
+.sheet .m-episode__btn { padding: 15px 0; grid-template-columns: 104px 1fr; }
+.sheet .m-episode__code { font-size: 30px; }
+.sheet[data-type="radio"] .sheet__title, .sheet[data-type="episode"] .sheet__title { color: var(--gold); }
+
+/* episode view */
+.m-ep { max-width: 62ch; margin: 0 auto; padding-top: 8px; }
+.m-ep__meta { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; margin: 0; font: 400 8px/1 var(--f-wide); letter-spacing: .28em; text-transform: uppercase; color: var(--gold); }
+.m-ep__show { font-size: 26px; line-height: .9; letter-spacing: .02em; text-shadow: 0 0 20px rgba(212,176,122,.3); }
+.m-ep__title { margin: 18px 0 0; font: italic 400 clamp(36px, 6vw, 58px)/1 var(--f-display); font-variation-settings: "opsz" 96; text-wrap: balance; }
+.m-ep__guest { margin: 14px 0 0; font: 300 19px/1.4 var(--f-body); color: var(--gold); }
+.m-ep__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; margin-top: 22px; }
+.m-ep__play { display: inline-flex; align-items: center; gap: 10px; padding: 12px 20px; border-radius: 99px; border: 1px solid rgba(212,176,122,.6); font: 400 11px/1 var(--f-body); letter-spacing: .2em; text-transform: uppercase; color: var(--gold); transition: background .25s, color .25s; }
+.m-ep__play:hover { background: var(--gold); color: var(--night); }
+.m-ep__icon { width: 0; height: 0; border-left: 8px solid currentColor; border-top: 5px solid transparent; border-bottom: 5px solid transparent; }
+.m-ep.is-playing .m-ep__play { border-color: var(--rose); color: var(--rose); }
+.m-ep.is-playing .m-ep__icon { width: 7px; height: 7px; border: 0; border-radius: 50%; background: currentColor; animation: lamp 1.6s ease-in-out infinite; }
+.m-ep.is-playing .m-ep__play:hover, .m-episode.is-playing .m-episode__play:hover, .m-radio-latest.is-playing .m-radio-latest__play:hover { background: var(--rose); color: var(--night); }
+.m-ep__soon { font: italic 400 16px/1.3 var(--f-display); color: var(--mist); }
+.m-tracklist { list-style: none; margin: 6px 0 0; padding: 0; }
+.m-tracklist li { display: grid; grid-template-columns: 38px 1fr; align-items: baseline; padding: 9px 0; border-bottom: 1px solid rgba(242,238,248,.07); }
+.m-tracklist__no { font: 400 8px/1 var(--f-wide); letter-spacing: .2em; color: var(--gold); }
+.m-tracklist__track { font: italic 400 18px/1.3 var(--f-display); font-variation-settings: "opsz" 18; color: rgba(242,238,248,.88); }
+
+/* live: the card and the locket take a rose glow */
+html.radio-live .c-radio { background:
+    linear-gradient(var(--glass), var(--glass)) padding-box,
+    linear-gradient(135deg, rgba(233,163,184,.85), rgba(139,111,209,.25) 40%, rgba(242,238,248,.06) 62%, rgba(233,163,184,.55)) border-box;
+  box-shadow: 0 24px 60px -30px rgba(0,0,0,.9), 0 0 46px -12px rgba(233,163,184,.5); }
+html.radio-live .radio__logo { text-shadow: 0 0 26px rgba(233,163,184,.55); }
+html.radio-live .locket__frame { box-shadow: 0 0 90px 10px rgba(139,111,209,.28), 0 0 40px 2px rgba(233,163,184,.22), inset 0 0 0 1px rgba(212,176,122,.12); }
+
+/* phones: an on-air line above the quote */
+.onair { position: absolute; z-index: 4; left: 50%; bottom: calc(146px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); display: inline-flex; align-items: center; gap: 10px; max-width: calc(100% - 32px); padding: 4px 14px 4px 5px; border-radius: 99px; border: 1px solid rgba(212,176,122,.3); background: rgba(20,16,34,.55); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); white-space: nowrap; }
+.onair__logo { font-size: 20px; line-height: 1; padding-top: 2px; }
+.onair__when { display: inline-flex; align-items: baseline; gap: 6px; font: 400 11px/1 var(--f-body); letter-spacing: .12em; text-transform: uppercase; color: var(--gold); }
+.onair__when .m-cd { margin-left: 3px; } .onair__when .m-cd:first-child { margin-left: 0; }
+.onair__when .m-cd b { font-size: 11px; }
+.onair__live { display: none; }
+html.radio-live .onair { border-color: rgba(233,163,184,.6); }
+html.radio-live .onair__off { display: none; }
+html.radio-live .onair__live { display: inline-flex; }
+
 /* deck */
 .m-deck { --sc-color: #d4b07a; display: none; }
 .m-deck__go { width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; padding: 11px 14px; border-radius: 99px; border: 1px solid rgba(212,176,122,.55); font: 400 11px/1 var(--f-body); letter-spacing: .2em; text-transform: uppercase; color: var(--gold); transition: background .25s, color .25s; }
@@ -191,8 +313,10 @@ button.m-set__btn:hover .m-set__state::after { border-left-color: var(--night); 
 .c-sets .m-deck[data-state="playing"] { display: block; position: fixed; z-index: 19; left: 12px; right: 12px; bottom: calc(76px + env(safe-area-inset-bottom, 0px)); padding: 12px 16px; border-radius: 20px 5px 20px 5px; background: rgba(20,16,34,.9); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); border: 1px solid rgba(212,176,122,.3); }
 
 /* dock (phones) */
-.dock { position: fixed; z-index: 20; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); display: grid; grid-template-columns: repeat(6, 1fr); padding: 6px; border-radius: 99px; background: rgba(20,16,34,.72); -webkit-backdrop-filter: blur(16px) saturate(1.2); backdrop-filter: blur(16px) saturate(1.2); border: 1px solid rgba(212,176,122,.28); }
-.dock button { padding: 13px 0; border-radius: 99px; font: 400 9.5px/1 var(--f-body); letter-spacing: .12em; text-transform: uppercase; color: var(--mist); }
+.dock { position: fixed; z-index: 20; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); display: grid; grid-template-columns: minmax(0, 1.5fr) repeat(6, minmax(0, 1fr)); padding: 6px; border-radius: 99px; background: rgba(20,16,34,.72); -webkit-backdrop-filter: blur(16px) saturate(1.2); backdrop-filter: blur(16px) saturate(1.2); border: 1px solid rgba(212,176,122,.28); }
+.dock button { padding: 13px 0; border-radius: 99px; font: 400 9.5px/1 var(--f-body); letter-spacing: .08em; text-transform: uppercase; color: var(--mist); }
+.dock .dock__unk { position: relative; padding: 9px 0 7px; font: 400 18px/1 "Bebas Neue", "Antonio", var(--f-body); letter-spacing: .03em; color: var(--star); }
+html.radio-live .dock .dock__unk::before { content: ""; display: inline-block; width: 5px; height: 5px; margin: 0 4px 0 0; vertical-align: 4px; border-radius: 50%; background: #ff8fae; box-shadow: 0 0 6px 1px rgba(255,143,174,.9); animation: lamp 1.6s ease-in-out infinite; }
 .dock button:hover, .dock button:focus-visible { color: var(--night); background: var(--gold); }
 
 /* ---------- sheet ---------- */
@@ -253,6 +377,27 @@ button.m-set__btn:hover .m-set__state::after { border-left-color: var(--night); 
   .sheet__body { padding: 4px 18px 24px; }
   .m-juliet__gallery, .sheet .m-ig { grid-template-columns: repeat(2, 1fr); }
   .m-video__btn { grid-template-columns: 116px 1fr; }
+  .m-radio__head { grid-template-columns: 1fr; row-gap: 10px; }
+  .m-radio__logo { grid-row: auto; font-size: clamp(76px, 24vw, 132px); }
+  .m-radio__tagline { font-size: 19px; }
+  .m-radio__status { grid-template-columns: 1fr; gap: 12px; margin-top: 20px; padding: 14px 16px; border-radius: 22px 5px 22px 5px; }
+  .m-radio__row, .m-radio__row:nth-child(n+4) { flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; }
+  .m-radio__row:first-child { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .sheet .m-episode__btn { grid-template-columns: 70px 1fr; column-gap: 12px; padding: 13px 0; }
+  .sheet .m-episode__code { font-size: 24px; }
+  .sheet .m-episode__title { font-size: 21px; white-space: normal; text-wrap: balance; }
+}
+
+/* short landscape (phones on their side): portrait left, words right */
+@media (max-height: 599px) and (min-aspect-ratio: 6/5) {
+  .kicker { top: calc(env(safe-area-inset-top, 0px) + 12px); }
+  .mast { top: calc(env(safe-area-inset-top, 0px) + 32px); font-size: min(15vh, 12vw); }
+  .locket { left: 27%; top: calc(16vh + 40px); height: calc(100% - 16vh - 128px); min-height: 0; }
+  .quote { left: 50%; right: 24px; top: calc(16vh + 46px); bottom: auto; }
+  .m-quote__text { font-size: 18px; }
+  .m-quote__by { margin-top: 8px; }
+  .onair { left: calc(75% - 12px); bottom: calc(126px + env(safe-area-inset-bottom, 0px)); }
+  .next { left: 50%; right: 24px; bottom: calc(78px + env(safe-area-inset-bottom, 0px)); gap: 6px; }
 }
 
 /* ======================= DESKTOP BOARD ======================= */
@@ -278,15 +423,19 @@ button.m-set__btn:hover .m-set__state::after { border-left-color: var(--night); 
   .c-sets > .card__body { display: block; }
   .card__deck { display: block; padding: 2px 18px 18px; }
   .c-sets .m-deck, .c-sets .m-deck[data-state="playing"] { display: block; position: static; padding: 0; border: 0; border-radius: 0; background: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
-  .c-sets  { left: 44px;  top: 50px; }
-  .c-posts { left: 76px;  top: 464px; }
-  .c-gigs  { left: 932px; top: 52px; }
-  .c-video { left: 908px; top: 352px; }
-  .c-insta { left: 944px; top: 508px; }
+  .onair { display: none; }
+  /* left: sets, UNKNOWN, visuals · right: dates, transmissions, instagram */
+  .c-sets  { left: 46px;  top: 20px; }
+  .c-radio { left: 68px;  top: 342px; }
+  .c-video { left: 40px;  top: 616px; }
+  .c-gigs  { left: 934px; top: 30px; }
+  .c-posts { left: 912px; top: 344px; }
+  .c-insta { left: 948px; top: 572px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .mast, .m-set.is-playing .m-set__state { animation: none !important; }
+  .m-onair__dot, .dock .dock__unk::before, .m-episode__play, .m-radio-latest__play, .m-ep__icon { animation: none !important; }
 }
 </style>
 </head>
@@ -320,13 +469,29 @@ button.m-set__btn:hover .m-set__state::after { border-left-color: var(--night); 
 
   <section class="card c-sets" aria-labelledby="t-sets" data-depth="10">
     <div class="card__head"><span class="label" id="t-sets">Sets</span><span class="card__count" data-m="count-sets"></span><button type="button" class="card__x" data-open="sets" aria-label="Open all sets">+</button></div>
-    <div class="card__body" data-m="sets" data-limit="4"></div>
+    <div class="card__body" data-m="sets" data-limit="3"></div>
     <div class="card__deck"><div class="m-deck" data-m="deck"></div></div>
+  </section>
+
+  <section class="card c-radio" aria-labelledby="t-radio" data-depth="12" data-signal>
+    <div class="card__head"><span class="label" id="t-radio">Radio show</span><span class="card__count" data-m="radio-status"></span><button type="button" class="card__x" data-open="radio" aria-label="Open the UNKNOWN radio show">+</button></div>
+    <div class="card__body">
+      <button type="button" class="radio__mark" data-open="radio" aria-label="UNKNOWN radio show: schedule and episodes">
+        <span class="radio__logo m-unknown" data-m="radio-name">UNKNOWN</span>
+        <span class="radio__by"><span class="label">Hosted by</span><span class="radio__host" data-m="radio-host"></span></span>
+      </button>
+      <dl class="radio__times">
+        <dt>Airs</dt><dd data-m="radio-schedule"></dd>
+        <dt data-m="radio-countdown-label" data-live-text="Ends in" data-off-text="Next in"></dt><dd data-m="radio-countdown"></dd>
+        <dt>Your time</dt><dd data-m="radio-next"></dd>
+      </dl>
+      <div data-m="radio-latest"></div>
+    </div>
   </section>
 
   <section class="card c-posts" aria-labelledby="t-posts" data-depth="16">
     <div class="card__head"><span class="label" id="t-posts">Transmissions</span><span class="card__count" data-m="count-posts"></span><button type="button" class="card__x" data-open="posts" aria-label="Open all transmissions">+</button></div>
-    <div class="card__body" data-m="posts" data-limit="3"></div>
+    <div class="card__body" data-m="posts" data-limit="2"></div>
   </section>
 
   <section class="card c-gigs" aria-labelledby="t-gigs" data-depth="13">
@@ -344,7 +509,15 @@ button.m-set__btn:hover .m-set__state::after { border-left-color: var(--night); 
     <div class="card__body" data-m="insta" data-limit="3"></div>
   </section>
 
+  <button type="button" class="onair" data-open="radio" aria-label="UNKNOWN radio show">
+    <span data-m="radio-status"></span>
+    <span class="onair__logo m-unknown" aria-hidden="true">UNKNOWN</span>
+    <span class="onair__when onair__off"><span data-m="radio-next"></span></span>
+    <span class="onair__when onair__live">Ends in <span data-m="radio-countdown"></span></span>
+  </button>
+
   <nav class="dock" aria-label="Sections">
+    <button type="button" class="dock__unk m-unknown" data-open="radio" aria-label="UNKNOWN radio show">UNKNOWN</button>
     <button type="button" data-open="sets">Sets</button>
     <button type="button" data-open="gigs">Dates</button>
     <button type="button" data-open="videos">Video</button>
@@ -429,7 +602,7 @@ button.m-set__btn:hover .m-set__state::after { border-left-color: var(--night); 
   const lctx = lines.getContext("2d");
   const locket = document.getElementById("locket");
   const cards = Array.from(document.querySelectorAll(".card")).map((el, i) => ({
-    el, depth: Number(el.dataset.depth) || 10,
+    el, depth: Number(el.dataset.depth) || 10, signal: "signal" in el.dataset,
     ax: 5 + (i * 3) % 6, ay: 7 + (i * 5) % 6,
     fx: 0.00045 + i * 0.00007, fy: 0.00055 + i * 0.00005, p: i * 1.7,
     hover: 0, dx: 0, dy: 0,
@@ -446,6 +619,21 @@ button.m-set__btn:hover .m-set__state::after { border-left-color: var(--night); 
     lctx.beginPath(); lctx.arc(x, y, r, 0, 6.283); lctx.fill();
     lctx.globalAlpha = a * .3;
     lctx.beginPath(); lctx.arc(x, y, r * 3, 0, 6.283); lctx.fill();
+  }
+
+  // UNKNOWN: broadcast arcs leaving the radio card's star, rose and quicker while on air
+  function signal(x, y, t, toRight) {
+    const live = root.classList.contains("radio-live");
+    const period = live ? 1600 : 3200;
+    const dir = toRight ? 0 : Math.PI;
+    lctx.lineWidth = 1;
+    for (let k = 0; k < 3; k++) {
+      const p = M.reduced ? (k + 1) / 3.2 : ((t / period + k / 3) % 1);
+      const r = 5 + p * 22;
+      lctx.globalAlpha = (1 - p) * (live ? 0.85 : 0.5);
+      lctx.strokeStyle = live ? "#ff9fba" : "#d4b07a";
+      lctx.beginPath(); lctx.arc(x, y, r, dir - 0.62, dir + 0.62); lctx.stroke();
+    }
   }
 
   function drawLines(t) {
@@ -477,6 +665,7 @@ button.m-set__btn:hover .m-set__state::after { border-left-color: var(--night); 
       lctx.beginPath(); lctx.moveTo(ax, ay); lctx.lineTo(mxp, myp); lctx.lineTo(bx, by); lctx.stroke();
       star(ax, ay, 1.6, 0.7 + c.hover * 0.3);
       star(mxp, myp, 1.1 + c.hover * 0.6, 0.5 + c.hover * 0.5);
+      if (c.signal) signal(ax, ay, t, onLeft);
     }
     lctx.globalAlpha = 1;
   }
