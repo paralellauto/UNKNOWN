@@ -62,7 +62,8 @@ Link previews (WhatsApp, Instagram, iMessage) use `assets/img/og-image.jpg`.
 
 - One player at a time: starting a set or an episode stops the YouTube video, and starting the video stops the set.
 - Fonts are self-hosted in `assets/fonts/` (Archivo, IBM Plex Mono, Antonio, Martian Mono and Bebas Neue for the UNKNOWN logo, all under the SIL Open Font License). The site makes no requests to Google, which matters for GDPR in Germany.
-- SoundCloud and YouTube load only after a visitor presses play.
+- On computers, SoundCloud and YouTube load only after a visitor presses play.
+- On phones and tablets, the newest episode's SoundCloud player loads with the page, without playing. Phones only let a page start music when the tap lands inside SoundCloud's own player, so the page shows that player in the UNKNOWN strip and one tap on its ▶ starts the episode. If a browser still blocks playback after the site's own play button, the page says "Tap ▶ in the player to start".
 - Visitors who turn on "reduce motion" in their system settings get a still version with no drifting, sweeping or typing.
 - Phones and tablets get a dock at the bottom instead of floating windows; the page still never scrolls.
 - The desktop layout is drawn on a 1280 × 800 board that scales to fit any window, so the composition stays the same from a 13" laptop to a large monitor.

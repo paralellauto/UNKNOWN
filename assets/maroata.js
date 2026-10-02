@@ -14,6 +14,9 @@
   // (for hosts that block third-party iframes).
   const linkOnly = root.dataset.embeds === "link";
   const finePointer = matchMedia("(pointer: fine)").matches;
+  // Phones and tablets only start embedded audio when the tap lands inside the player,
+  // so on touch screens the newest episode's SoundCloud player is loaded up front.
+  const touchFirst = matchMedia("(hover: none) and (pointer: coarse)").matches;
   const desktopQuery = matchMedia("(min-width: 1000px) and (min-height: 600px) and (min-aspect-ratio: 6/5)");
 
   const $ = (s, el = document) => el.querySelector(s);
@@ -556,6 +559,7 @@
         <div class="m-deck__now"><span class="m-deck__label">Now playing</span><span class="m-deck__title"></span>
           <button type="button" class="m-deck__stop" aria-label="Stop the set">Stop</button></div>
         <div class="m-deck__frame"></div>
+        <p class="m-deck__hint" role="status" hidden>Tap ▶︎ in the player to start</p>
       </div>`;
     $(".m-deck__stop", deck).addEventListener("click", stop);
   }
@@ -601,21 +605,163 @@
     return s.url;
   }
 
+  /* SoundCloud Widget API: lets the page follow what happens inside the player (play,
+     pause, end) and ask it to play. Loaded on first use; if it cannot load, playback
+     still works and the page simply cannot follow it. */
+  let scApi = null;
+  function loadScApi() {
+    if (!scApi) {
+      scApi = new Promise((res, rej) => {
+        if (window.SC && window.SC.Widget) return res(window.SC);
+        const tag = document.createElement("script");
+        tag.src = "https://w.soundcloud.com/player/api.js";
+        tag.async = true;
+        tag.onload = () => (window.SC && window.SC.Widget ? res(window.SC) : rej(new Error("no SC.Widget")));
+        tag.onerror = () => rej(new Error("SoundCloud API blocked"));
+        document.head.appendChild(tag);
+      });
+      scApi.catch(() => {});
+    }
+    return scApi;
+  }
+
+  let scWidget = null; // SC.Widget for the iframe in the deck, once ready
+  let mounted = null; // { kind, i } of the item loaded in the deck
+  let mountSeq = 0; // bumps on every new iframe so late events from an old one are ignored
+  let blockTimer = 0;
+  let armTimer = 0;
+  let armFailed = false; // SoundCloud did not load for the armed player (e.g. a content blocker): stop arming
+
+  const episodeItem = (e) => ({ url: e.url, embed: e.embed, code: `${radio().name || "UNKNOWN"} ${e.code || ""}`.trim(), title: e.title });
+  function firstPlayable() {
+    if (setsFromRadio()) {
+      const eps = episodes();
+      const k = eps.findIndex((e) => e.url);
+      return k >= 0 ? { item: episodeItem(eps[k]), kind: "episode", i: k } : null;
+    }
+    const list = sets();
+    const k = list.findIndex((x) => x.url);
+    return k >= 0 ? { item: list[k], kind: "set", i: k } : null;
+  }
+  function latestEpisode() {
+    const eps = episodes();
+    const k = eps.findIndex((e) => e.url);
+    return k >= 0 ? { item: episodeItem(eps[k]), kind: "episode", i: k } : null;
+  }
+
+  function setAudio(state) {
+    if (!deck) return;
+    if (state) deck.dataset.audio = state; else delete deck.dataset.audio;
+    const hint = $(".m-deck__hint", deck);
+    if (hint) hint.hidden = state !== "blocked";
+    const label = $(".m-deck__label", deck);
+    if (label) label.textContent = deck.dataset.state === "armed" ? "Tap ▶︎ to play" : state === "paused" ? "Paused" : "Now playing";
+  }
+  // If the player is ready but nothing plays within 2.5 s, the browser blocked autoplay:
+  // say so instead of looking stuck.
+  function watchForBlock(seq) {
+    clearTimeout(blockTimer);
+    blockTimer = setTimeout(() => {
+      if (seq === mountSeq && deck && deck.dataset.audio === "waiting" && scWidget) setAudio("blocked");
+    }, 2500);
+  }
+
+  function onAudioPlay(kind, i) {
+    clearTimeout(blockTimer);
+    if (playing.kind !== kind || playing.i !== i || deck.dataset.state !== "playing") {
+      resetVideos();
+      playing = { kind, i };
+      deck.dataset.state = "playing";
+      deck.dataset.kind = kind;
+      root.classList.add("is-playing");
+      markPlaying();
+    }
+    setAudio("on");
+  }
+
+  function mountWidget(s, kind, i, autoplay) {
+    const seq = ++mountSeq;
+    clearTimeout(blockTimer);
+    scWidget = null;
+    mounted = { kind, i };
+    const src =
+      "https://w.soundcloud.com/player/?url=" + encodeURIComponent(widgetTarget(s)) +
+      "&color=%23" + scColor() + "&inverse=true&auto_play=" + (autoplay ? "true" : "false") + "&show_user=true";
+    const frame = $(".m-deck__frame", deck);
+    frame.innerHTML = `<iframe title="SoundCloud player: ${esc(s.title || s.code)}" src="${src}" height="20" scrolling="no" frameborder="no" allow="autoplay; encrypted-media"></iframe>`;
+    $(".m-deck__title", deck).textContent = `${s.code ? s.code + " — " : ""}${s.title || "Set"}`;
+    deck.dataset.kind = kind;
+    const ifr = $("iframe", frame);
+    loadScApi().then((SC) => {
+      if (seq !== mountSeq || !ifr.isConnected) return;
+      const w = SC.Widget(ifr);
+      const E = SC.Widget.Events;
+      w.bind(E.READY, () => {
+        if (seq !== mountSeq) return;
+        scWidget = w;
+        clearTimeout(armTimer);
+        if (deck.dataset.state === "armed") setAudio("ready");
+        if (deck.dataset.audio === "waiting") {
+          try { w.play(); } catch (e) { /* ignore */ }
+          watchForBlock(seq);
+        }
+      });
+      w.bind(E.PLAY, () => { if (seq === mountSeq) onAudioPlay(mounted.kind, mounted.i); });
+      w.bind(E.PAUSE, () => { if (seq === mountSeq && deck.dataset.audio === "on") setAudio("paused"); });
+      w.bind(E.FINISH, () => { if (seq === mountSeq) setAudio("paused"); });
+    }).catch(() => { if (seq === mountSeq) disarm(); });
+  }
+
+  // Touch screens: load the newest episode's player without playing it, so the first
+  // tap on its own ▶ starts the music.
+  function armLatest() {
+    if (!touchFirst || linkOnly || armFailed || !deck || deck.dataset.state === "playing") return;
+    const f = latestEpisode() || firstPlayable();
+    if (!f) return;
+    deck.dataset.state = "armed";
+    mountWidget(f.item, f.kind, f.i, false);
+    setAudio("loading");
+    // No player after 15 s: give the page's own play button back.
+    const seq = mountSeq;
+    clearTimeout(armTimer);
+    armTimer = setTimeout(() => { if (seq === mountSeq && !scWidget) disarm(); }, 15000);
+  }
+  // The armed player could not load: unload it and stop arming for this visit.
+  function disarm() {
+    clearTimeout(armTimer);
+    if (!deck || deck.dataset.state !== "armed") return;
+    armFailed = true;
+    mountSeq++;
+    scWidget = null;
+    mounted = null;
+    $(".m-deck__frame", deck).innerHTML = "";
+    deck.dataset.state = "idle";
+    delete deck.dataset.kind;
+    setAudio("");
+  }
+
   function playItem(s, kind, i) {
     if (!s || !s.url || !deck) return;
     // Pressing the item that is already playing stops it (instead of reloading it from 0:00).
     if (playing.kind === kind && playing.i === i) { stop(); return; }
     resetVideos();
+    const wasArmed = deck.dataset.state === "armed" && mounted && mounted.kind === kind && mounted.i === i;
     playing = { kind, i };
-    const src =
-      "https://w.soundcloud.com/player/?url=" + encodeURIComponent(widgetTarget(s)) +
-      "&color=%23" + scColor() + "&inverse=true&auto_play=true&show_user=true";
-    $(".m-deck__frame", deck).innerHTML = linkOnly
-      ? `<span class="m-deck__preview">No audio in this preview</span> <a class="m-ext" href="${esc(s.url)}" target="_blank" rel="noopener">Listen on SoundCloud ↗</a>`
-      : `<iframe title="SoundCloud player: ${esc(s.title || s.code)}" src="${src}" height="20" scrolling="no" frameborder="no" allow="autoplay"></iframe>`;
-    $(".m-deck__title", deck).textContent = `${s.code ? s.code + " — " : ""}${s.title || "Set"}`;
     deck.dataset.state = "playing";
-    deck.dataset.kind = kind;
+    if (linkOnly) {
+      $(".m-deck__frame", deck).innerHTML = `<span class="m-deck__preview">No audio in this preview</span> <a class="m-ext" href="${esc(s.url)}" target="_blank" rel="noopener">Listen on SoundCloud ↗</a>`;
+      $(".m-deck__title", deck).textContent = `${s.code ? s.code + " — " : ""}${s.title || "Set"}`;
+      deck.dataset.kind = kind;
+      setAudio("");
+    } else if (wasArmed && scWidget) {
+      // This item's player is already loaded (touch screens): ask it to play.
+      setAudio("waiting");
+      try { scWidget.play(); } catch (e) { /* ignore */ }
+      watchForBlock(mountSeq);
+    } else {
+      mountWidget(s, kind, i, true);
+      setAudio("waiting");
+    }
     root.classList.add("is-playing");
     markPlaying();
   }
@@ -627,17 +773,24 @@
     const was = playing;
     const hadFocus = deck.contains(document.activeElement);
     playing = { kind: "", i: -1 };
+    clearTimeout(blockTimer);
+    clearTimeout(armTimer);
+    mountSeq++;
+    scWidget = null;
+    mounted = null;
     $(".m-deck__frame", deck).innerHTML = "";
     deck.dataset.state = "idle";
     delete deck.dataset.kind;
+    setAudio("");
     root.classList.remove("is-playing");
     markPlaying();
+    if (touchFirst) armLatest(); // keep a tappable player on touch screens
     // The Stop button just disappeared: keep keyboard focus somewhere sensible.
     if (hadFocus) {
       const attr = was.kind === "episode" ? "data-play-episode" : "data-play";
       const scope = sheetOpen ? sheet : document;
       const opener = `[data-open="${was.kind === "episode" ? "radio" : "sets"}"]`;
-      const target = [$(".m-deck__go", deck), ...$$(`[${attr}="${was.i}"]`, scope), sheetOpen ? $("[data-m='sheet-close']", sheet) : null, ...$$(opener)]
+      const target = [deck.dataset.state === "armed" ? $(".m-deck__frame iframe", deck) : null, $(".m-deck__go", deck), ...$$(`[${attr}="${was.i}"]`, scope), sheetOpen ? $("[data-m='sheet-close']", sheet) : null, ...$$(opener)]
         .find((el) => shown(el) && (!sheetOpen || sheet.contains(el) || deckOnTop()));
       if (target) target.focus({ preventScroll: true });
     }
@@ -760,7 +913,8 @@
   const FOCUSABLE = "a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),iframe,[tabindex]:not([tabindex='-1'])";
   function trapList() {
     const list = $$(FOCUSABLE, sheet).filter(shown);
-    if (deckOnTop()) list.push(...$$("button:not([disabled])", $(".m-deck__live", deck) || deck).filter(shown));
+    // The deck's player is reachable too: the blocked hint asks for a press inside it.
+    if (deckOnTop()) list.push(...$$("iframe, button:not([disabled])", $(".m-deck__live", deck) || deck).filter(shown));
     return list;
   }
   function inTrap(el) {
@@ -1005,7 +1159,7 @@
 
   const M = {
     data: D, $, $$, esc, asset, pad, parts, reduced, finePointer, desktopQuery,
-    upcomingGigs, render: R, play, playEpisode, playVideo, resetVideos, stop, open, close, fitBoard, parallax,
+    upcomingGigs, render: R, play, playEpisode, playVideo, resetVideos, stop, open, close, fitBoard, parallax, touchFirst,
     broadcast, episodes,
     onTick: (fn) => tickers.push(fn), scale: 1,
   };
@@ -1034,6 +1188,10 @@
     fill();
     loadVideoMeta();
     bind();
+    if (touchFirst) {
+      if (document.readyState === "complete") setTimeout(armLatest, 300);
+      else addEventListener("load", () => setTimeout(armLatest, 300), { once: true });
+    }
     tick();
     setInterval(tick, 1000);
     if (location.hash) openFromHash();

@@ -151,6 +151,8 @@ button.m-set__btn:hover .m-set__title { color: var(--amber); }
 }
 .m-set.is-playing .m-set__state { color: var(--amber); }
 @keyframes eq { to { background-size: 3px 40%, 3px 100%, 3px 50%; } }
+/* paused in the player, or autoplay held back: nothing is sounding, so the eq marks stand still */
+html:has([data-m="deck"]:is([data-audio="paused"], [data-audio="blocked"])) :is(.m-set.is-playing .m-set__state, .m-episode.is-playing .m-episode__play span, .m-radio-latest.is-playing .m-radio-latest__icon, .m-ep.is-playing .m-ep__icon) { animation: none; }
 
 /* transmissions */
 .m-post__btn { width: 100%; height: 48px; display: grid; grid-template-columns: 34px minmax(0, 1fr); column-gap: 8px; row-gap: 4px; align-content: center; text-align: left; }
@@ -255,7 +257,9 @@ button.m-video__btn:hover .m-video__title { color: var(--amber); }
 @keyframes breathe { from { box-shadow: 0 0 4px 1px rgba(255,59,47,.45); } to { box-shadow: 0 0 12px 3px rgba(255,59,47,.7); } }
 
 /* the console's deck: the only SoundCloud player on the page */
-.m-deck { --sc-color: #e2860f; }
+.m-deck { --sc-color: #e2860f;
+  /* what the ▶ window shows until SoundCloud's player has painted over it: the strip's own play button */
+  --sc-wait: var(--amber) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 10'%3E%3Cpath d='M0 0l8 5-8 5z' fill='%23120405'/%3E%3C/svg%3E") 50% 50% / 8px 10px no-repeat; }
 .m-deck__go { width: 100%; height: 36px; display: flex; align-items: center; gap: 10px; padding: 0 14px; border: 1px solid var(--amber-line); font: 500 10px/1 var(--f-meta); letter-spacing: .16em; text-transform: uppercase; color: var(--amber); transition: background .15s, color .15s, border-color .15s; }
 .m-deck__go:hover { background: var(--amber); border-color: var(--amber); color: var(--ink); }
 .m-deck__icon, .m-radio-latest__icon { flex: none; width: 0; height: 0; border-left: 8px solid currentColor; border-top: 5px solid transparent; border-bottom: 5px solid transparent; }
@@ -273,6 +277,25 @@ button.m-video__btn:hover .m-video__title { color: var(--amber); }
 .m-deck__frame .m-ext { display: inline-block; line-height: 20px; }
 .m-deck__frame .m-deck__preview { display: inline-block; margin-right: 8px; font: 500 9.5px/20px var(--f-meta); letter-spacing: .1em; text-transform: uppercase; color: var(--paper-dim); }
 @keyframes blink { 50% { opacity: .2; } }
+/* armed (touch screens): the newest episode's player is loaded and waits for one tap on SoundCloud's own ▶.
+   Phones only start audio when the tap lands inside the player, so that ▶ is the play control:
+   each layout shows it in a window of --k × 20px (the mini player's ▶ is 20×20 at its left edge). */
+.m-deck[data-state="armed"] .m-deck__idle { display: none; }
+.m-deck[data-state="armed"] .m-deck__live { display: block; }
+.m-deck[data-state="armed"] .m-deck__stop { display: none; }
+.m-deck__label, .m-deck__hint { font-variant-emoji: text; }
+.m-deck[data-state="armed"] .m-deck__label { color: var(--amber); }
+.m-deck[data-state="armed"] .m-deck__label::before { content: none; }
+/* keyboard focus on the armed (or blocked) player: Stop hands focus to its iframe, which never matches :focus-visible
+   when focused by script, so the page marks keyboard use itself (html.is-keys) */
+html.is-keys .m-deck:is([data-state="armed"], [data-audio="blocked"]) .m-deck__frame:focus-within { outline: 1px solid #fff; outline-offset: 3px; }
+/* on the board the ▶ fills the console row: draw the ring inside it, clear of the countdown */
+html.is-keys .board .m-deck:is([data-state="armed"], [data-audio="blocked"]) .m-deck__frame:focus-within { outline-width: 2px; outline-offset: -2px; }
+/* paused inside the player: calm, a still pause mark */
+.m-deck[data-audio="paused"] .m-deck__label::before { content: ""; flex: none; width: 6px; height: 6px; background: linear-gradient(90deg, currentColor 0 2px, transparent 2px 4px, currentColor 4px); animation: none; }
+/* the browser held back autoplay: the engine un-hides this line, which points at the player */
+.m-deck__hint { margin: 0; height: 10px; font: 500 9.5px/10px var(--f-meta); letter-spacing: .1em; text-transform: uppercase; color: var(--amber); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.m-deck__hint::before { content: ""; display: inline-block; vertical-align: 1px; margin-right: 6px; width: 0; height: 0; border-right: 6px solid currentColor; border-top: 4px solid transparent; border-bottom: 4px solid transparent; }
 
 /* fallbacks for an older engine that left the countdown as plain text and "Your time" empty when there is no schedule */
 .air__cd:not(:has(.m-cd)) { align-self: center; font: 400 9.5px/1.25 var(--f-hud); font-stretch: 87.5%; letter-spacing: .1em; text-transform: uppercase; color: var(--amber); }
@@ -568,6 +591,38 @@ button.m-video__btn:hover .m-video__title { color: var(--amber); }
   .m-deck__stop { position: absolute; top: -5px; bottom: -5px; right: -16px; width: 64px; display: flex; align-items: center; justify-content: center; box-shadow: inset 1px 0 0 var(--amber-line); }
   .m-deck__stop:focus-visible { outline-offset: -3px; }
   html.has-sheet .m-deck__stop { top: -5px; bottom: calc(-5px - var(--sab)); right: -16px; width: 64px; }
+  /* SoundCloud's own ▶, drawn at the size of the strip's play button (44px; 48px on tablets) */
+  .console { --k: 2.2; --arm-w: 104px; }
+  .m-deck[data-state="armed"] .m-deck__frame, .m-deck[data-audio="blocked"] .m-deck__frame { flex: none; width: calc(20px * var(--k)); height: calc(20px * var(--k)); margin: 0; overflow: hidden; outline: 1px solid var(--amber-line); background: var(--sc-wait); }
+  .m-deck[data-state="armed"] .m-deck__frame iframe, .m-deck[data-audio="blocked"] .m-deck__frame iframe { width: 180px; height: 20px; transform: scale(var(--k)); transform-origin: 0 0; }
+  /* armed: it takes the place of the strip's ▶ (same row, right edge); the strip keeps the episode's code and title */
+  .m-deck[data-state="armed"] { display: block; grid-column: 1 / -1; grid-row: 7; justify-self: end; align-self: center; width: var(--arm-w); }
+  .m-deck[data-state="armed"] .m-deck__live { display: flex; align-items: center; gap: 10px; padding-right: 0; }
+  .m-deck[data-state="armed"] .m-deck__now { display: contents; }
+  .m-deck[data-state="armed"] .m-deck__title { display: none; }
+  .m-deck[data-state="armed"] .m-deck__label { display: block; flex: 1; min-width: 0; white-space: normal; text-align: right; line-height: 12px; }
+  .console:has(.m-deck[data-state="armed"]) .latest { margin-right: calc(var(--arm-w) + 14px); }
+  @media (min-width: 600px) { .console { --arm-w: 152px; } .m-deck[data-state="armed"] .m-deck__label { white-space: nowrap; } }
+  .console:has(.m-deck[data-state="armed"][data-kind="episode"]) .m-radio-latest__play { display: none; }
+  /* no recording for the newest episode: the armed player is for an older one, so it takes the whole row with its own title
+     (as while playing) instead of sitting beside a title it would not play */
+  .console:has(.console__latest.no-play) .m-deck[data-state="armed"] { justify-self: stretch; width: auto; }
+  .console:has(.console__latest.no-play) .m-deck[data-state="armed"] .m-deck__live { display: grid; height: calc(20px * var(--k)); grid-template-columns: auto minmax(0, 1fr); grid-template-rows: 1fr 1fr; gap: 0 12px; }
+  .console:has(.console__latest.no-play) .m-deck[data-state="armed"] .m-deck__frame { grid-column: 1; grid-row: 1 / 3; }
+  .console:has(.console__latest.no-play) .m-deck[data-state="armed"] .m-deck__label { grid-column: 2; grid-row: 1; align-self: end; margin-bottom: 3px; text-align: left; white-space: nowrap; line-height: 10px; }
+  .console:has(.console__latest.no-play) .m-deck[data-state="armed"] .m-deck__title { display: block; grid-column: 2; grid-row: 2; align-self: start; margin-top: 3px; line-height: 10px; }
+  .console:has(.console__latest.no-play):has(.m-deck[data-state="armed"]) :is(.latest, .latest__archive) { visibility: hidden; }
+  /* blocked: the playing row shows the big ▶ on the left, the hint pointing at it, the title under it, Stop on the right */
+  .m-deck[data-state="playing"][data-audio="blocked"] { padding-top: 0; padding-bottom: 0; }
+  html.has-sheet .m-deck[data-state="playing"][data-audio="blocked"] { padding-top: 0; padding-bottom: var(--sab); }
+  .m-deck[data-audio="blocked"] .m-deck__live { display: grid; height: calc(20px * var(--k)); grid-template-columns: auto minmax(0, 1fr); grid-template-rows: 1fr 1fr; column-gap: 12px; }
+  .m-deck[data-audio="blocked"] .m-deck__now { display: contents; }
+  .m-deck[data-audio="blocked"] .m-deck__label { display: none; }
+  .m-deck[data-audio="blocked"] .m-deck__frame { grid-column: 1; grid-row: 1 / 3; }
+  .m-deck[data-audio="blocked"] .m-deck__hint { grid-column: 2; grid-row: 1; align-self: end; margin-bottom: 3px; }
+  .m-deck[data-audio="blocked"] .m-deck__title { grid-column: 2; grid-row: 2; align-self: start; margin-top: 3px; line-height: 10px; }
+  .m-deck[data-audio="blocked"] .m-deck__stop { top: 0; bottom: 0; }
+  html.has-sheet .m-deck[data-audio="blocked"] .m-deck__stop { top: 0; bottom: calc(0px - var(--sab)); }
 
   /* dock */
   .dock { position: fixed; z-index: 20; left: 0; right: 0; bottom: 0; height: calc(var(--dock-h) + var(--sab)); padding-bottom: var(--sab); display: grid; grid-template-columns: 1fr 1fr 1fr 1.5fr 1fr 1fr 1fr; background: rgba(8,4,4,.92); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); border-top: 1px solid var(--amber-line); }
@@ -643,6 +698,11 @@ button.m-video__btn:hover .m-video__title { color: var(--amber); }
     .m-deck[data-state="playing"] { --rule-x: 0px; right: 0; margin: 0 auto; width: calc(min(640px, 100% - 32px) - 40px); height: 48px; padding: 7px 0; }
     .m-deck__now { font-size: 10.5px; }
     .m-deck__stop { top: -7px; bottom: -7px; right: 0; width: 56px; }
+    .console { --k: 2.4; --arm-w: 168px; }
+    html.has-sheet .console { --k: 2.2; } /* the deck under a sheet keeps its 44px row */
+    .m-deck__hint { height: 12px; font-size: 10.5px; line-height: 12px; }
+    .m-deck[data-state="armed"] .m-deck__label { line-height: 13px; }
+    .m-deck[data-audio="blocked"] .m-deck__title { line-height: 12px; }
     .dock :is(button, a) { font-size: 11px; gap: 7px; }
     .dock__unk .m-unknown { font-size: 18px; }
     /* wide tablets: the radio sheet gets the desktop head and status row back */
@@ -882,6 +942,39 @@ button.m-video__btn:hover .m-video__title { color: var(--amber); }
   .m-deck__live { position: relative; height: 36px; padding-right: 64px; }
   .m-deck__stop { position: absolute; right: 0; top: 0; bottom: 0; width: 56px; display: grid; place-items: center; border: 1px solid var(--amber-line); transition: background .15s, color .15s, border-color .15s; }
   .m-deck__stop:hover { background: var(--amber); border-color: var(--amber); color: var(--ink); }
+  /* blocked (mouse): the hint takes the place of the now-line, its arrow over the player's ▶ */
+  .m-deck[data-audio="blocked"] :is(.m-deck__label, .m-deck__title) { visibility: hidden; }
+  .m-deck[data-audio="blocked"] .m-deck__hint { position: absolute; left: 0; top: 0; right: 64px; }
+  .m-deck[data-audio="blocked"] .m-deck__hint::before { margin: 0 8px 0 6px; vertical-align: 2px; border: 4px solid transparent; border-top: 5px solid currentColor; border-bottom: 0; }
+  /* touch screens: SoundCloud's own ▶ at a finger's size, 40–42 screen px at any board scale (--s).
+     At the smallest scale it is 50px on a 36px row: it reaches into the 10px gap above and the 16px padding below,
+     stopping 6px under the countdown and 6px above the console's edge; --k-drop keeps that balance */
+  .m-deck { --k: clamp(1.8, calc(2.1 / var(--s, 1)), 2.5); --k-drop: calc((var(--k) - 1.8) * 4.28px); }
+  .m-deck[data-state="armed"] .m-deck__live { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: 1fr 1fr; column-gap: 12px; padding-right: 0; }
+  .m-deck[data-state="armed"] .m-deck__now { display: contents; }
+  .m-deck[data-state="armed"] .m-deck__frame { grid-column: 1; grid-row: 1 / 3; width: calc(20px * var(--k)); height: calc(20px * var(--k)); margin: calc((36px - 20px * var(--k)) / 2 + var(--k-drop)) 0 calc((36px - 20px * var(--k)) / 2 - var(--k-drop)); overflow: hidden; outline: 1px solid var(--amber-line); background: var(--sc-wait); }
+  .m-deck[data-state="armed"] .m-deck__frame iframe { width: 180px; height: 20px; transform: scale(var(--k)); transform-origin: 0 0; }
+  .m-deck[data-state="armed"] .m-deck__label { grid-column: 2; grid-row: 1; align-self: end; margin-bottom: 3px; }
+  .m-deck[data-state="armed"] .m-deck__title { grid-column: 2; grid-row: 2; align-self: start; margin-top: 3px; line-height: 10px; }
+  /* the console's own "Play episode" would be a second play button for the same episode: the archive takes the row */
+  .console:has(.m-deck[data-state="armed"][data-kind="episode"]) .m-radio-latest__play { display: none; }
+  .console:has(.m-deck[data-state="armed"][data-kind="episode"]) .latest__archive { left: 16px; width: 384px; }
+  /* …and so would the EPISODES.UNK row's ▶ for that episode (the newest one with a recording, as the engine arms it) */
+  .board:has(.m-deck[data-state="armed"][data-kind="episode"]) .w-sets .m-episode:nth-child(1 of :not(.is-unreleased)) .m-episode__play { display: none; }
+  @media (hover: none) and (pointer: coarse) {
+    .m-deck[data-audio="blocked"] .m-deck__live { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: 1fr 1fr; column-gap: 12px; }
+    .m-deck[data-audio="blocked"] .m-deck__now { display: contents; }
+    .m-deck[data-audio="blocked"] .m-deck__label { display: none; }
+    .m-deck[data-audio="blocked"] .m-deck__title { visibility: visible; grid-column: 2; grid-row: 2; align-self: start; margin-top: 3px; line-height: 10px; }
+    .m-deck[data-audio="blocked"] .m-deck__hint { position: static; grid-column: 2; grid-row: 1; align-self: end; margin-bottom: 3px; }
+    .m-deck[data-audio="blocked"] .m-deck__hint::before { margin: 0 6px 0 0; vertical-align: 1px; border: 4px solid transparent; border-right: 6px solid currentColor; border-left: 0; }
+    .m-deck[data-audio="blocked"] .m-deck__frame { grid-column: 1; grid-row: 1 / 3; width: calc(20px * var(--k)); height: calc(20px * var(--k)); margin: calc((36px - 20px * var(--k)) / 2 + var(--k-drop)) 0 calc((36px - 20px * var(--k)) / 2 - var(--k-drop)); overflow: hidden; outline: 1px solid var(--amber-line); background: var(--sc-wait); }
+    .m-deck[data-audio="blocked"] .m-deck__frame iframe { width: 180px; height: 20px; transform: scale(var(--k)); transform-origin: 0 0; }
+  }
+  /* autoplay held back while a sheet is open: the sheet would hide the player and its hint, so it ends at the console's top edge
+     (the board is centred and scaled by s = min(100vw / 1280, 100vh / 800, 1.5); the console starts 216 * s below the centre) */
+  html.has-sheet:has(.board .m-deck[data-audio="blocked"]) .sheet { bottom: calc(50% - min(16.875vw, 27vh, 324px)); bottom: calc(50% - min(16.875dvw, 27dvh, 324px)); grid-template-rows: minmax(0, 1fr); }
+  html.has-sheet:has(.board .m-deck[data-audio="blocked"]) .sheet__frame { max-height: 100%; }
   .board.is-pass .air__pill .m-onair[data-live="false"] .m-onair__dot { animation: lampPulse 120ms linear 710ms 1; }
   /* latest episode cell */
   .console__latest { position: relative; min-width: 0; padding: 16px; box-shadow: inset 1px 0 0 var(--seam); }
@@ -913,7 +1006,7 @@ button.m-video__btn:hover .m-video__title { color: var(--amber); }
   .board .hud, .bar__nav :is(button, a), .board .m-handle, .board .m-empty, .board .win__src,
   .board .m-set__code, .board .m-set__meta, .board .m-post__no, .board .m-post__meta, .board .m-gig__venue, .board .m-gig__link,
   .board .m-video__note, .board .m-video__slot, .board .m-vplayer__note, .board .m-vplayer[data-state="playing"] .m-vplayer__frame::before, .board .m-video.is-open-slot .m-video__title, .board .m-quote__by,
-  .board .m-onair, .board .m-deck__now, .board .air__sched, .board .air__label, .board .air__yt, .board .air__where, .board .air__where .m-ext,
+  .board .m-onair, .board .m-deck__now, .board .m-deck__hint, .board .air__sched, .board .air__label, .board .air__yt, .board .air__where, .board .air__where .m-ext,
   .board .m-radio-latest__label, .board .m-radio-latest__code, .board .m-radio-latest__meta, .board .air__cd:not(:has(.m-cd)),
   .board .w-sets .m-episode__meta, .board .sets__all, .board .gigs__book, .board .ig-card__go { font-size: var(--f95); }
   .board .m-flag, .board .w-sets .m-episode__code, .board .w-sets .m-episode__soon, .board .m-vplayer__start::before, .board .m-vplayer__start::after, .board .m-gig__m, .board .m-gig__meta, .board .foot__cd .m-cd i { font-size: var(--f9); }
@@ -1180,8 +1273,8 @@ button.m-video__btn:hover .m-video__title { color: var(--amber); }
   /* ---------- deck: an episode's Stop says so; a keyboard press on "Play latest episode" lands on Stop, not <body> ---------- */
   var deckEl = $("[data-m='deck']");
   var viaKeys = false; // only a keyboard press moves focus: a tap must not leave a ring on Stop
-  document.addEventListener("keydown", function () { viaKeys = true; }, true);
-  document.addEventListener("pointerdown", function () { viaKeys = false; }, true);
+  document.addEventListener("keydown", function () { viaKeys = true; root.classList.add("is-keys"); }, true);
+  document.addEventListener("pointerdown", function () { viaKeys = false; root.classList.remove("is-keys"); }, true);
   if (deckEl) new MutationObserver(function () {
     var stopBtn = $(".m-deck__stop", deckEl);
     if (!stopBtn) return;
