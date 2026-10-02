@@ -69,6 +69,8 @@ h2 { margin: 0; font: 700 26px/1.05 var(--f-display); font-stretch: 100%; text-w
 
 footer { display: flex; flex-wrap: wrap; gap: 8px 28px; font: 400 12px/1.5 var(--f-mono); color: var(--muted); border-top: 1px solid var(--line); padding-top: 16px; }
 footer b { color: var(--text); font-weight: 500; }
+footer code { color: var(--text); }
+.live-link { color: #e2860f; text-underline-offset: 3px; }
 
 @media (max-width: 980px) {
   .options { grid-template-columns: 1fr; max-width: 620px; }
@@ -136,6 +138,7 @@ footer b { color: var(--text); font-weight: 500; }
   <footer>
     <span><b>Try:</b> click any panel's expand button, open a transmission, press Play latest set.</span>
     <span><b>Phone:</b> the dock at the bottom opens each section.</span>
+    <span><b>On air:</b> <a class="live-link" href="signal/#onair">preview Signal while UNKNOWN is live</a> (works on every option with <code>#onair</code>).</span>
   </footer>
 </div>
 </body>
