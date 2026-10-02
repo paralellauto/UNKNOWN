@@ -49,12 +49,23 @@
     };
   }
 
+  // Start of a gig in ms. A gig may carry its own IANA `timezone` (the venue's);
+  // without one its date/time are read in the visitor's zone.
+  function gigStart(g) {
+    if (g && g.timezone) {
+      const [y, m, d] = String(g.date).split("-").map(Number);
+      const [hh, mm] = String(g.time || "00:00").split(":").map(Number);
+      return zoned(y, (m || 1) - 1, d || 1, hh || 0, mm || 0, g.timezone);
+    }
+    return toDate(g.date, g.time).getTime();
+  }
+
   function upcomingGigs() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     return (D.gigs || [])
       .filter((g) => g && g.date && toDate(g.date) >= today)
-      .sort((a, b) => toDate(a.date, a.time) - toDate(b.date, b.time));
+      .sort((a, b) => gigStart(a) - gigStart(b));
   }
 
   const sets = () => (D.soundcloud && D.soundcloud.sets) || [];
@@ -118,11 +129,13 @@
     return `<ol class="m-sets">${list
       .map((s, i) => {
         const code = esc(s.code || `MRT-${pad(i)}`);
+        // Empty slot (url: "" in content.js): shown as a quiet "coming soon" row.
+        // To fill it, add the SoundCloud link to the set in assets/content.js.
         if (!s.url) {
           return `<li class="m-set is-open-slot"><div class="m-set__btn" aria-disabled="true">
             <span class="m-set__code">${code}</span>
-            <span class="m-set__title">Open slot</span>
-            <span class="m-set__meta">Add a SoundCloud link in content.js</span>
+            <span class="m-set__title">Coming soon</span>
+            <span class="m-set__meta">Next recording</span>
             <span class="m-set__state" aria-hidden="true"></span></div></li>`;
         }
         return `<li class="m-set" data-set="${i}"><button type="button" class="m-set__btn" data-play="${i}" aria-label="Play ${esc(s.title || code)}">
@@ -145,9 +158,10 @@
     return `<ul class="m-videos">${list
       .map(({ v, i }) => {
         if (!v.id) {
+          // Empty slot: add a YouTube id to this pick in assets/content.js.
           return `<li class="m-video is-open-slot"><div class="m-video__btn" aria-disabled="true">
             <span class="m-video__thumb"><span class="m-video__slot">Open slot</span></span>
-            <span class="m-video__title">Add a YouTube id in content.js</span></div></li>`;
+            <span class="m-video__title">Next pick soon</span></div></li>`;
         }
         return `<li class="m-video"><button type="button" class="m-video__btn" data-video="${i}" aria-label="Watch ${esc(v.title || "video")}">
           <span class="m-video__thumb"><img src="${thumb(v.id)}" alt="" loading="lazy" onerror="this.parentNode.classList.add('is-broken');this.remove()"><span class="m-video__play" aria-hidden="true"></span></span>
@@ -267,7 +281,7 @@
         <span class="m-radio-latest__title">${esc(e.title || "")}</span>
         <span class="m-radio-latest__meta">${p.num}${e.guest ? " · " + esc(e.guest) : ""}${e.sample ? ` <span class="m-flag">Sample</span>` : ""}</span>
       </button>
-      ${e.url ? `<button type="button" class="m-radio-latest__play" data-play-episode="${i}"><span class="m-radio-latest__icon" aria-hidden="true"></span><span>Play episode</span></button>` : ""}
+      ${e.url ? `<button type="button" class="m-radio-latest__play" data-play-episode="${i}"><span class="m-radio-latest__icon" aria-hidden="true"></span><span class="m-play-text">Play episode</span></button>` : ""}
     </div>`;
   };
 
@@ -304,6 +318,17 @@
     </div>`;
   };
 
+  // "2:00:00" -> <time datetime="PT2H0M">120 min</time>, so a duration never reads as a clock time.
+  function lengthTag(len) {
+    const n = String(len).trim().split(":").map(Number);
+    if (n.length >= 2 && n.length <= 3 && n.every((x) => Number.isFinite(x) && x >= 0)) {
+      const [h, m, sec] = n.length === 3 ? n : [0, n[0], n[1]];
+      const min = Math.round(h * 60 + m + sec / 60);
+      if (min > 0) return `<span class="m-ep__len" title="Duration"><time datetime="PT${Math.floor(min / 60)}H${min % 60}M">${min} min</time></span>`;
+    }
+    return `<span class="m-ep__len" title="Duration">${esc(len)}</span>`;
+  }
+
   R.episode = function (code) {
     const all = episodes();
     const i = all.findIndex((e) => e.code === code);
@@ -313,11 +338,11 @@
     const older = all[i + 1];
     const newer = all[i - 1];
     return `<article class="m-ep" data-episode="${i}">
-      <p class="m-ep__meta"><span class="m-unknown m-ep__show">${esc(radio().name || "UNKNOWN")}</span><span>${esc(e.code)}</span><time datetime="${esc(e.date)}">${p.d} ${p.m} ${p.y}</time>${e.length ? `<span>${esc(e.length)}</span>` : ""}${e.sample ? `<span class="m-flag">Sample</span>` : ""}</p>
+      <p class="m-ep__meta"><span class="m-unknown m-ep__show">${esc(radio().name || "UNKNOWN")}</span><span>${esc(e.code)}</span><time datetime="${esc(e.date)}">${p.d} ${p.m} ${p.y}</time>${e.length ? lengthTag(e.length) : ""}${e.sample ? `<span class="m-flag">Sample</span>` : ""}</p>
       <h2 class="m-ep__title">${esc(e.title || "Untitled")}</h2>
       ${e.guest ? `<p class="m-ep__guest">${esc(e.guest)}</p>` : ""}
       <div class="m-ep__actions">
-        ${e.url ? `<button type="button" class="m-ep__play" data-play-episode="${i}"><span class="m-ep__icon" aria-hidden="true"></span><span>Play episode</span></button>${ext(e.url, "Open on SoundCloud ↗")}` : `<span class="m-ep__soon">Recording not uploaded yet</span>`}
+        ${e.url ? `<button type="button" class="m-ep__play" data-play-episode="${i}"><span class="m-ep__icon" aria-hidden="true"></span><span class="m-play-text">Play episode</span></button>${ext(e.url, "Open on SoundCloud ↗")}` : `<span class="m-ep__soon">Recording not uploaded yet</span>`}
       </div>
       <h3 class="m-ep__sub">Tracklist</h3>
       ${R.tracklist(e)}
@@ -405,6 +430,8 @@
 
   function playItem(s, kind, i) {
     if (!s || !s.url || !deck) return;
+    // Pressing the item that is already playing stops it (instead of reloading it from 0:00).
+    if (playing.kind === kind && playing.i === i) { stop(); return; }
     playing = { kind, i };
     const src =
       "https://w.soundcloud.com/player/?url=" + encodeURIComponent(s.url) +
@@ -419,24 +446,48 @@
     markPlaying();
   }
 
+  const shown = (el) => !!el && el.getClientRects().length > 0 && getComputedStyle(el).visibility !== "hidden";
+
   function stop() {
     if (!deck) return;
+    const was = playing;
+    const hadFocus = deck.contains(document.activeElement);
     playing = { kind: "", i: -1 };
     $(".m-deck__frame", deck).innerHTML = "";
     deck.dataset.state = "idle";
     delete deck.dataset.kind;
     root.classList.remove("is-playing");
     markPlaying();
+    // The Stop button just disappeared: keep keyboard focus somewhere sensible.
+    if (hadFocus) {
+      const attr = was.kind === "episode" ? "data-play-episode" : "data-play";
+      const scope = sheetOpen ? sheet : document;
+      const opener = `[data-open="${was.kind === "episode" ? "radio" : "sets"}"]`;
+      const target = [$(".m-deck__go", deck), ...$$(`[${attr}="${was.i}"]`, scope), sheetOpen ? $("[data-m='sheet-close']", sheet) : null, ...$$(opener)]
+        .find((el) => shown(el) && (!sheetOpen || sheet.contains(el) || deckOnTop()));
+      if (target) target.focus({ preventScroll: true });
+    }
   }
 
   function markPlaying() {
     $$("[data-set]").forEach((li) => li.classList.toggle("is-playing", playing.kind === "set" && Number(li.dataset.set) === playing.i));
     $$("[data-episode]").forEach((li) => li.classList.toggle("is-playing", playing.kind === "episode" && Number(li.dataset.episode) === playing.i));
+    // Play buttons of the playing item act as Stop: say so to assistive tech and in visible labels.
+    const verb = (el, on) => {
+      const l = el.getAttribute("aria-label");
+      if (l) el.setAttribute("aria-label", l.replace(/^(Play|Stop)\b/, on ? "Stop" : "Play"));
+      const t = $(".m-play-text", el);
+      if (t) t.textContent = t.textContent.replace(/^(Play|Stop)\b/, on ? "Stop" : "Play");
+    };
+    $$("[data-play]").forEach((b) => b.dataset.play !== "first" && verb(b, playing.kind === "set" && Number(b.dataset.play) === playing.i));
+    $$("[data-play-episode]").forEach((b) => verb(b, playing.kind === "episode" && Number(b.dataset.playEpisode) === playing.i));
   }
 
   /* ---------- sheet (expanded view of any module) ---------- */
-  const TITLES = { sets: "Sets", videos: "Visuals", gigs: "Dates", posts: "Transmissions", post: "Transmission", insta: "Instagram", juliet: "Juliet", radio: "Radio", episode: "Episode" };
+  // No prototype, so hashes such as #toString or #constructor are not mistaken for sheets.
+  const TITLES = Object.assign(Object.create(null), { sets: "Sets", videos: "Visuals", gigs: "Dates", posts: "Transmissions", post: "Transmission", insta: "Instagram", juliet: "Juliet", radio: "Radio", episode: "Episode" });
   let sheet, sheetBody, sheetTitle, lastFocus, closeTimer;
+  let sheetOpen = false;
   let pushed = 0; // history entries this page added for open sheets
   let unwinding = false; // true while close() walks back through those entries
 
@@ -479,6 +530,7 @@
     sheetBody.scrollTop = 0;
     markPlaying();
     sheet.hidden = false;
+    sheetOpen = true;
     root.classList.add("has-sheet");
     requestAnimationFrame(() => requestAnimationFrame(() => sheet.classList.add("is-open")));
     const closeBtn = $("[data-m='sheet-close']", sheet);
@@ -492,6 +544,7 @@
   function close(fromHistory) {
     if (!sheet || sheet.hidden || !sheet.classList.contains("is-open")) return;
     sheet.classList.remove("is-open");
+    sheetOpen = false;
     root.classList.remove("has-sheet");
     closeTimer = setTimeout(() => {
       sheet.hidden = true;
@@ -513,6 +566,27 @@
     if (h.startsWith("videos-")) return open("videos", h.slice(7), true);
     if (h.startsWith("episode-")) return open("episode", h.slice(8), true);
     if (TITLES[h] && h !== "post" && h !== "episode") return open(h, undefined, true);
+    return close(true); // any other fragment (#onair, #top, …) means no sheet
+  }
+
+  /* ---------- keep keyboard focus inside an open sheet (role=dialog aria-modal) ---------- */
+  // A design may raise the playing deck above the sheet (Signal on phones); it stays reachable then.
+  function deckOnTop() {
+    if (!deck || deck.dataset.state !== "playing") return false;
+    const b = $(".m-deck__stop", deck);
+    if (!shown(b)) return false;
+    const r = b.getBoundingClientRect();
+    const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+    return !!hit && deck.contains(hit);
+  }
+  const FOCUSABLE = "a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),iframe,[tabindex]:not([tabindex='-1'])";
+  function trapList() {
+    const list = $$(FOCUSABLE, sheet).filter(shown);
+    if (deckOnTop()) list.push(...$$("button:not([disabled])", $(".m-deck__live", deck) || deck).filter(shown));
+    return list;
+  }
+  function inTrap(el) {
+    return !!el && (sheet.contains(el) || (deck && deck.contains(el) && deckOnTop()));
   }
 
   /* ---------- quote rotator ---------- */
@@ -567,7 +641,8 @@
     const next = upcomingGigs()[0];
     $$("[data-m='countdown']").forEach((el) => {
       if (!next) { el.textContent = "Dates soon"; return; }
-      let s = Math.max(0, Math.floor((toDate(next.date, next.time) - now) / 1000));
+      let s = Math.floor((gigStart(next) - now.getTime()) / 1000);
+      if (s <= 0) { if (el.textContent !== "On now") el.textContent = "On now"; return; } // started today
       const d = Math.floor(s / 86400); s -= d * 86400;
       const h = Math.floor(s / 3600); s -= h * 3600;
       const m = Math.floor(s / 60); s -= m * 60;
@@ -711,7 +786,21 @@
       if (t.dataset.open) return open(t.dataset.open);
     });
     document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") close();
+      if (e.key === "Escape") return close();
+      if (e.key !== "Tab" || !sheetOpen) return;
+      const list = trapList();
+      if (!list.length) return;
+      // Move explicitly: the deck a design raises above the sheet is not next to it in DOM order.
+      const k = list.indexOf(document.activeElement);
+      const n = list.length;
+      e.preventDefault();
+      list[k === -1 ? (e.shiftKey ? n - 1 : 0) : (k + (e.shiftKey ? n - 1 : 1)) % n].focus({ preventScroll: true });
+    });
+    // Focus that still slips out (e.g. tabbing out of an embedded player) goes back to the sheet.
+    document.addEventListener("focusin", (e) => {
+      if (!sheetOpen || inTrap(e.target)) return;
+      const c = $("[data-m='sheet-close']", sheet);
+      if (c) c.focus({ preventScroll: true });
     });
     addEventListener("popstate", () => {
       if (unwinding) {

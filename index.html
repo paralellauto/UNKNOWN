@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>MAROATA · Three Directions</title>
-<meta name="description" content="Three design directions for the MAROATA site. Pick one.">
+<title>MAROATA · Directions</title>
+<meta name="description" content="Design directions for the MAROATA site and the UNKNOWN radio show. Pick one.">
 <meta name="theme-color" content="#0c0c0d">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230c0c0d'/%3E%3Cpath d='M6 24V8l10 9 10-9v16' fill='none' stroke='%23e8e5df' stroke-width='2.4'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="assets/fonts/fonts.css">
 <style>
-/* Chooser: a neutral contact sheet so the three directions can be compared side by side. */
+/* Chooser: a neutral contact sheet so the four directions can be compared side by side. */
 :root {
   --ground: #0c0c0d;
   --panel: #151517;
@@ -46,6 +46,21 @@ h2 { margin: 0; font: 700 26px/1.05 var(--f-display); font-stretch: 100%; text-w
 .opt[data-o="1"] h2 { font-stretch: 125%; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
 .opt[data-o="2"] h2 { font-family: "Antonio", var(--f-display); font-weight: 700; font-size: 32px; text-transform: uppercase; color: #e2860f; }
 .opt[data-o="3"] h2 { font-family: "Bodoni Moda", Georgia, serif; font-style: italic; font-weight: 400; font-size: 32px; color: #e8d3ad; }
+.opt[data-o="4"] h2 { font-stretch: 125%; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; font-size: 30px; }
+.opt[data-o="4"] h2 em { font-style: normal; color: #e2860f; }
+.unknown { font-family: "Bebas Neue", "Antonio", Impact, sans-serif; font-weight: 400; letter-spacing: .01em; }
+
+/* featured: the new combined option */
+.featured { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); }
+.featured .shots { padding: 16px 0 16px 16px; }
+.featured .shots .phone { right: 14px; bottom: -18px; width: 15%; }
+.featured .copy { padding: 26px 26px 20px; align-content: center; }
+.featured .copy p { font-size: 15.5px; }
+.featured .go { grid-column: 1 / -1; }
+.badge { display: inline-flex; align-items: center; gap: 8px; justify-self: start; padding: 5px 9px 4px; border: 1px solid #e2860f; color: #e2860f; font: 500 10px/1 var(--f-mono); letter-spacing: .2em; text-transform: uppercase; }
+.badge i { width: 6px; height: 6px; border-radius: 50%; background: #e2860f; }
+.radio-note { display: flex; align-items: baseline; gap: 10px; font: 400 12px/1.4 var(--f-mono); color: var(--muted); }
+.radio-note .unknown { font-size: 22px; color: var(--text); }
 .copy p { margin: 0; color: #c9c7c2; font-size: 14.5px; max-width: 46ch; }
 .copy ul { margin: 4px 0 0; padding: 0; list-style: none; display: grid; gap: 5px; font: 400 12px/1.4 var(--f-mono); color: var(--muted); }
 .copy li::before { content: "— "; }
@@ -57,15 +72,31 @@ footer b { color: var(--text); font-weight: 500; }
 
 @media (max-width: 980px) {
   .options { grid-template-columns: 1fr; max-width: 620px; }
+  .featured { grid-template-columns: 1fr; max-width: 620px; }
+  .featured .shots { padding: 14px 14px 0; }
+  .featured .shots .phone { right: 26px; bottom: -26px; width: 23%; }
+  .featured .copy { padding: 22px 18px 20px; }
 }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <h1>MAROATA<span>Three directions · pick one</span></h1>
-    <p class="note">All three share the same content: SoundCloud sets, Instagram, YouTube picks, transmissions, quotes, dates and Juliet. Each is a single page that never scrolls; every panel expands in place. Content lives in <code>assets/content.js</code>.</p>
+    <h1>MAROATA<span>Four directions · pick one</span></h1>
+    <p class="note">All four share the same content: SoundCloud sets, the <span class="unknown">UNKNOWN</span> radio show, Instagram, YouTube picks, transmissions, quotes, dates and Juliet. Each is a single page that never scrolls; every panel expands in place. Content lives in <code>assets/content.js</code>.</p>
   </header>
+
+  <a class="opt featured" data-o="4" href="signal/">
+    <div class="shots"><img class="desk" src="assets/previews/signal-desktop.jpg" alt="Signal design on desktop"><img class="phone" src="assets/previews/signal-phone.jpg" alt="Signal design on a phone"></div>
+    <div class="copy">
+      <span class="badge"><i></i>New · Option 4</span>
+      <h2>Signal <em>/</em> Bunker × System Core</h2>
+      <p id="signal-copy">Bunker's dark room, grid and beam of light with System Core's amber HUD windows and Juliet in colour. <span class="unknown">UNKNOWN</span> is a black broadcast console across the bottom with its own player; red only appears while the show is on air.</p>
+      <ul id="signal-points"><li>Draggable windows, typed quotes, one sweeping beam</li><li>On air lamp, next broadcast, latest episode in one click</li><li>Add <code>#onair</code> to the address to preview the live look</li></ul>
+      <span class="radio-note"><span class="unknown">UNKNOWN</span> is now in all four options</span>
+    </div>
+    <span class="go">Open Signal <span>→</span></span>
+  </a>
 
   <main class="options">
     <a class="opt" data-o="1" href="bunker/">
@@ -74,7 +105,7 @@ footer b { color: var(--text); font-weight: 500; }
         <span class="tag">Option 1</span>
         <h2>Bunker</h2>
         <p>Berlin concrete after dark. Pure black and white, Juliet in monochrome, and a slow beam of light that sweeps the room and lights up the MAROATA wordmark as it passes.</p>
-        <ul><li>Strict 12-column grid, hairline modules</li><li>Instagram and video turn to colour on hover</li><li>Quietest and most minimal of the three</li></ul>
+        <ul><li>Strict 12-column grid, hairline modules</li><li>Instagram and video turn to colour on hover</li><li>Quietest and most minimal of the four</li></ul>
       </div>
       <span class="go">Open Bunker <span>→</span></span>
     </a>

@@ -155,7 +155,9 @@ window.MAROATA = {
   ],
 
   /* GIGS — next dates. Past dates hide automatically.
-     `link` is optional (tickets / event page). */
+     `link` is optional (tickets / event page).
+     `timezone` is optional: the venue's IANA zone (e.g. "Europe/Berlin") makes
+     the countdown exact for visitors in other countries. */
   gigs: [
     { date: "2026-10-24", time: "23:00", city: "Ciudad de México", venue: "Venue to be announced", link: "", sample: true },
     { date: "2026-11-14", time: "00:00", city: "Berlin", venue: "Venue to be announced", link: "", sample: true },

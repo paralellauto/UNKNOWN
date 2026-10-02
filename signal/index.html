@@ -149,15 +149,15 @@ button.m-set__btn:hover .m-set__title { color: var(--amber); }
 .m-post__btn:hover .m-post__title { color: var(--amber); text-decoration-color: currentColor; }
 
 /* dates */
-.m-gig { height: 52px; display: grid; grid-template-columns: 54px minmax(0, 1fr) auto; grid-template-rows: auto auto; column-gap: 10px; row-gap: 5px; align-content: center; align-items: center; }
+.m-gig { height: 52px; display: grid; grid-template-columns: 50px minmax(0, 1fr) auto; grid-template-rows: auto auto; column-gap: 8px; row-gap: 5px; align-content: center; align-items: center; }
 .m-gig__date { grid-row: 1 / 3; display: flex; align-items: baseline; gap: 3px; }
 .m-gig__d { font: 600 26px/.95 var(--f-num); color: var(--amber); font-variant-numeric: tabular-nums; }
 .m-gig__m { font: 400 9px/1 var(--f-hud); font-stretch: 87.5%; letter-spacing: .1em; color: var(--amber); }
 .m-gig__y { display: none; }
 .m-gig__where { grid-column: 2; grid-row: 1 / 3; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .m-gig__city { font: 600 14px/1.1 var(--f-display); font-stretch: 85%; letter-spacing: .02em; text-transform: uppercase; color: var(--paper); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.m-gig__venue { font: 400 9.5px/1.2 var(--f-meta); letter-spacing: .04em; color: var(--paper-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.m-gig__meta { grid-column: 3; grid-row: 1; justify-self: end; font: 500 9px/1 var(--f-meta); letter-spacing: .12em; color: var(--paper-dim); text-align: right; white-space: nowrap; }
+.m-gig__venue { font: 400 9.5px/1.2 var(--f-meta); letter-spacing: .01em; color: var(--paper-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.m-gig__meta { grid-column: 3; grid-row: 1; justify-self: end; font: 500 9px/1 var(--f-meta); letter-spacing: .08em; color: var(--paper-dim); text-align: right; white-space: nowrap; }
 .m-gig .m-flag, .m-gig__link { grid-column: 3; grid-row: 2; justify-self: end; }
 .m-gig__link { font: 500 9.5px/1 var(--f-meta); letter-spacing: .14em; text-transform: uppercase; color: var(--amber); }
 
@@ -220,6 +220,10 @@ button.m-video__btn:hover .m-video__title { color: var(--amber); }
 .m-deck__frame .m-ext { display: inline-block; line-height: 20px; }
 @keyframes blink { 50% { opacity: .2; } }
 
+/* no radio.schedule in content.js: the countdown says "Schedule soon" in HUD type and the empty "Your time" goes */
+.air__cd:not(:has(.m-cd)) { align-self: center; font: 400 9.5px/1.25 var(--f-hud); font-stretch: 87.5%; letter-spacing: .1em; text-transform: uppercase; color: var(--amber); }
+.air__yt:has([data-m="radio-next"]:empty) { display: none; }
+
 /* ---------- latest episode card (console + strip) ---------- */
 .m-radio-latest__label { font: 400 9.5px/10px var(--f-hud); font-stretch: 87.5%; letter-spacing: .1em; text-transform: uppercase; color: var(--amber); }
 .m-radio-latest__open { text-align: left; min-width: 0; }
@@ -276,6 +280,7 @@ button.m-video__btn:hover .m-video__title { color: var(--amber); }
 .m-reader__nav { display: flex; justify-content: space-between; gap: 16px; margin-top: 36px; padding-top: 14px; border-top: 1px solid var(--amber-line); }
 .m-reader__nav button { max-width: 48%; text-align: left; font: 400 9.5px/1.5 var(--f-hud); font-stretch: 87.5%; letter-spacing: .1em; text-transform: uppercase; color: var(--amber); transition: color .15s; }
 .m-reader__nav button:last-child { text-align: right; }
+.m-reader__nav button:only-of-type { max-width: 100%; } /* the missing side is an empty <span>: a lone link may use the whole row */
 .m-reader__nav button:hover { color: var(--paper); }
 /* sheet: visuals */
 .m-player__frame { position: relative; aspect-ratio: 16 / 9; background: #000; margin-top: 14px; outline: 1px solid var(--amber-line); }
@@ -463,7 +468,9 @@ button.m-video__btn:hover .m-video__title { color: var(--amber); }
   .air__cd .m-cd i { font-size: 9px; }
   .latest { grid-column: 1 / -1; grid-row: 7; min-width: 0; }
   .latest .m-radio-latest { height: 100%; display: flex; align-items: center; gap: 14px; }
-  .m-radio-latest__label, .m-radio-latest__meta { display: none; }
+  .m-radio-latest__label { display: none; }
+  /* the meta text is dropped, but its SAMPLE flag stays at the end of the title */
+  .m-radio-latest__meta { flex: none; display: inline-flex; align-items: center; font-size: 0; letter-spacing: 0; }
   .m-radio-latest__open { flex: 1; display: flex; align-items: center; gap: 8px; height: 100%; }
   .m-radio-latest__code { flex: none; }
   .m-radio-latest__title { flex: 1; font-size: 17px; }
@@ -482,6 +489,11 @@ button.m-video__btn:hover .m-video__title { color: var(--amber); }
   html.is-playing .console .latest { visibility: hidden; }
   html.is-playing .sheet__body { padding-bottom: 60px; }
   html.has-sheet .m-deck[data-state="playing"] { left: 0; right: 0; bottom: 0; width: auto; margin: 0; height: calc(44px + var(--sab)); padding: 5px 16px calc(5px + var(--sab)); }
+  /* Stop: a full-height column on the right edge (a real tap target), the iframe row ends before it */
+  .m-deck__live { position: relative; padding-right: 56px; }
+  .m-deck__stop { position: absolute; top: -5px; bottom: -5px; right: -16px; width: 64px; display: flex; align-items: center; justify-content: center; box-shadow: inset 1px 0 0 var(--amber-line); }
+  .m-deck__stop:focus-visible { outline-offset: -3px; }
+  html.has-sheet .m-deck__stop { top: -5px; bottom: calc(-5px - var(--sab)); right: -16px; width: 64px; }
 
   /* dock */
   .dock { position: fixed; z-index: 20; left: 0; right: 0; bottom: 0; height: calc(var(--dock-h) + var(--sab)); padding-bottom: var(--sab); display: grid; grid-template-columns: 1fr 1fr 1fr 1.5fr 1fr 1fr 1fr; background: rgba(8,4,4,.92); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); border-top: 1px solid var(--amber-line); }
@@ -531,6 +543,11 @@ button.m-video__btn:hover .m-video__title { color: var(--amber); }
     .next .m-flag { font-size: 10px; }
     .subject { right: 0; margin: 0 auto; top: calc(var(--sat) + 92px); width: min(100%, calc((100dvh - var(--sat) - 92px - var(--dock-h) - var(--strip-gap) - var(--strip-h) - var(--sab)) * .6)); }
     .subject__open { bottom: 150px; }
+    /* the narrower portrait frame shows the scan's red backdrop edge-on: a longer, eased side fade so it never reads as a panel */
+    .subject__stack {
+      -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 8%, #000 72%, transparent 100%), linear-gradient(to right, transparent 0, rgba(0,0,0,.3) 7%, rgba(0,0,0,.75) 15%, #000 24%, #000 76%, rgba(0,0,0,.75) 85%, rgba(0,0,0,.3) 93%, transparent 100%);
+      mask-image: linear-gradient(to bottom, transparent 0, #000 8%, #000 72%, transparent 100%), linear-gradient(to right, transparent 0, rgba(0,0,0,.3) 7%, rgba(0,0,0,.75) 15%, #000 24%, #000 76%, rgba(0,0,0,.75) 85%, rgba(0,0,0,.3) 93%, transparent 100%);
+    }
     .directive { left: 0; right: 0; margin: 0 auto; width: min(470px, 100% - 48px); }
     .m-quote__text { font-size: 30px; }
     .m-quote__by { font-size: 10.5px; }
@@ -547,6 +564,7 @@ button.m-video__btn:hover .m-video__title { color: var(--amber); }
     .m-radio-latest__title { font-size: 20px; }
     .m-deck[data-state="playing"] { right: 0; margin: 0 auto; width: calc(min(640px, 100% - 32px) - 40px); height: 48px; padding: 7px 0; }
     .m-deck__now { font-size: 10.5px; }
+    .m-deck__stop { top: -7px; bottom: -7px; right: 0; width: 56px; }
     .dock button { font-size: 11px; gap: 7px; }
     .dock__unk .m-unknown { font-size: 18px; }
     /* wide tablets: the radio sheet gets the desktop head and status row back */
@@ -575,6 +593,7 @@ button.m-video__btn:hover .m-video__title { color: var(--amber); }
     .m-quote__text { font-size: 20px; }
     .console { right: 0; margin: 0 auto; width: min(640px, 100% - 32px); }
     .m-deck[data-state="playing"] { right: 0; margin: 0 auto; width: calc(min(640px, 100% - 32px) - 32px); padding: 5px 0; }
+    .m-deck__stop { right: 0; width: 56px; }
   }
   @media (max-height: 360px) {
     .directive { display: none; }
@@ -693,7 +712,7 @@ button.m-video__btn:hover .m-video__title { color: var(--amber); }
   .slab__desc { line-height: 10px; white-space: nowrap; }
   .slab__logo { margin-top: 10px; font-size: calc(116px * var(--fit, 1)); line-height: .7; white-space: nowrap; transform: translateY(.052em); transition: text-shadow .3s; }
   .slab:hover .slab__logo { text-shadow: 0 0 18px rgba(255,255,255,.25); }
-  .slab__tag { margin-top: 11px; max-width: 360px; font: 300 15px/1 var(--f-display); font-stretch: 62%; color: var(--paper-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .slab__tag { margin-top: 11px; max-width: 360px; font: 300 15px/1 var(--f-display); font-stretch: 62%; color: var(--paper-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-rendering: geometricPrecision; }
   @supports ((background-clip: text) or (-webkit-background-clip: text)) {
     .board.is-pass .slab__logo { color: transparent; background: linear-gradient(100deg, #fff calc(var(--bx) - 44px - 60px), #e2860f calc(var(--bx) - 44px), #fff calc(var(--bx) - 44px + 60px)) no-repeat; -webkit-background-clip: text; background-clip: text; }
   }
@@ -715,7 +734,9 @@ button.m-video__btn:hover .m-video__title { color: var(--amber); }
   .air__where [data-m="radio-station"] { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
   .air__where [data-m="radio-live-link"] { flex: none; }
   .air__where .m-ext { font-size: 9.5px; line-height: 12px; }
-  .m-deck__live { height: 36px; }
+  .m-deck__live { position: relative; height: 36px; padding-right: 64px; }
+  .m-deck__stop { position: absolute; right: 0; top: 0; bottom: 0; width: 56px; display: grid; place-items: center; border: 1px solid var(--amber-line); transition: background .15s, color .15s, border-color .15s; }
+  .m-deck__stop:hover { background: var(--amber); border-color: var(--amber); color: var(--ink); }
   .board.is-pass .air__pill .m-onair[data-live="false"] .m-onair__dot { animation: lampPulse 120ms linear 710ms 1; }
   /* latest episode cell */
   .console__latest { position: relative; min-width: 0; padding: 16px; box-shadow: inset 1px 0 0 var(--seam); }
@@ -740,6 +761,17 @@ button.m-video__btn:hover .m-video__title { color: var(--amber); }
 
   /* sheets on the board */
   .m-tracklist:has(li:nth-child(9)) { columns: 2; column-gap: 32px; }
+
+  /* small windows (1000–1140 wide or 600–710 tall) scale the board below .89: lift the 9–10px tokens so the
+     microtype never renders under 8 device px. At .89 and up every max() resolves to the board size. */
+  .board { --f9: max(9px, calc(8.1px / var(--s, 1))); --f95: max(9.5px, calc(8.1px / var(--s, 1))); --f10: max(10px, calc(8.1px / var(--s, 1))); }
+  .board .hud, .bar__nav button, .board .m-handle, .board .m-empty, .board .win__src,
+  .board .m-set__code, .board .m-set__meta, .board .m-post__no, .board .m-post__meta, .board .m-gig__venue, .board .m-gig__link,
+  .board .m-video__note, .board .m-video__slot, .board .m-video.is-open-slot .m-video__title, .board .m-quote__by,
+  .board .m-onair, .board .m-deck__now, .board .air__sched, .board .air__label, .board .air__yt, .board .air__where, .board .air__where .m-ext,
+  .board .m-radio-latest__label, .board .m-radio-latest__code, .board .m-radio-latest__meta, .board .air__cd:not(:has(.m-cd)) { font-size: var(--f95); }
+  .board .m-flag, .board .m-gig__m, .board .m-gig__meta, .board .foot__cd .m-cd i { font-size: var(--f9); }
+  .board .m-ext, .board .m-deck__go, .board .latest__archive, .board .air__cd .m-cd i, .board .m-radio-latest__play { font-size: var(--f10); }
 }
 
 /* =========================== REDUCED MOTION =========================== */
