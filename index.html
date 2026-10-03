@@ -466,6 +466,78 @@ html.is-keys .board .m-deck:is([data-state="armed"], [data-audio="blocked"]) .m-
 .m-tracklist__track { font: 500 17px/1.2 var(--f-display); font-stretch: 85%; letter-spacing: .02em; text-transform: uppercase; color: var(--paper); }
 .m-ep .m-empty { margin-top: 14px; }
 
+/* ---------- privacy: the consent line, the Privacy link, the privacy sheet ---------- */
+/* the two answers always look the same: one style, one size, no default */
+.m-choice { height: 36px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 0 16px; border: 1px solid var(--amber-edge); background: rgba(8,3,4,.55); font: 500 10px/1 var(--f-meta); letter-spacing: .16em; text-transform: uppercase; color: var(--paper); white-space: nowrap; transition: background .15s, color .15s, border-color .15s; }
+.m-choice:hover { background: var(--amber); border-color: var(--amber); color: var(--ink); }
+.m-choice[aria-pressed]::before { content: ""; flex: none; width: 7px; height: 7px; box-sizing: border-box; border: 1px solid currentColor; }
+.m-choice[aria-pressed="true"] { border-color: var(--amber); color: var(--amber); }
+.m-choice[aria-pressed="true"]::before { background: currentColor; }
+.m-choice[aria-pressed="true"]:hover { color: var(--ink); }
+/* the line: a HUD card in the directive's place (the quote steps aside while it shows) */
+.consent { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px 14px; background: var(--glass); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border: 1px solid var(--amber-line); box-shadow: inset 0 1px 0 var(--amber-edge), 0 18px 40px -18px rgba(0,0,0,.8); animation: winIn .5s var(--ease) both; }
+html.has-consent-line .directive { visibility: hidden; }
+.consent__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; min-width: 0; }
+.consent__label { display: flex; align-items: center; gap: 8px; margin: 0; line-height: 10px; white-space: nowrap; }
+.consent__sq { flex: none; width: 6px; height: 6px; background: var(--amber); }
+.consent__more { position: relative; flex: none; font: 500 9.5px/10px var(--f-meta); letter-spacing: .14em; text-transform: uppercase; color: var(--amber); white-space: nowrap; text-decoration: underline 1px; text-decoration-color: var(--amber-line); text-underline-offset: 3px; transition: color .15s, text-decoration-color .15s; }
+.consent__more:hover { color: var(--paper); text-decoration-color: currentColor; }
+.consent__text { margin: 0; font: 400 15px/1.3 var(--f-display); font-stretch: 85%; letter-spacing: .01em; color: var(--paper); text-wrap: pretty; }
+.consent__actions { display: flex; gap: 8px; margin-top: 2px; }
+.consent .m-choice { flex: 0 0 120px; padding: 0 10px; }
+/* the same line at the top of a window while unanswered (shared links land on a window): a band under the
+   window's head, the question on the left, the two answers on the right; never over the close or ▶ buttons */
+.sheet__consent { flex: none; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 6px 28px; padding: 12px 22px 13px; border-bottom: 1px solid var(--amber-line); background: linear-gradient(90deg, rgba(226,134,15,.08), rgba(226,134,15,.015) 70%); animation: winIn .5s var(--ease) both; }
+.sheet[data-type="privacy"] .sheet__consent { display: none; } /* the privacy window has its own two buttons */
+.sheet__consent .consent__head { grid-column: 1; grid-row: 1; justify-content: flex-start; gap: 6px 20px; }
+.sheet__consent .consent__text { grid-column: 1; grid-row: 2; max-width: 64ch; font-size: 14px; color: rgba(246,232,213,.88); }
+.sheet__consent .consent__actions { grid-column: 2; grid-row: 1 / 3; margin: 0; }
+.sheet__consent .m-choice { flex: 0 0 120px; padding: 0 10px; }
+@media (pointer: coarse) {
+  .sheet__consent .m-choice { height: 44px; }
+  .sheet__consent .consent__more::after { content: ""; position: absolute; left: -10px; right: -14px; top: 50%; height: 44px; transform: translateY(-50%); }
+}
+/* the permanent link: a quiet label with the dock's square */
+.bar__privacy { display: inline-flex; align-items: center; gap: 7px; font: 500 9.5px/1 var(--f-meta); letter-spacing: .14em; text-transform: uppercase; color: var(--paper-dim); white-space: nowrap; transition: color .15s; }
+.bar__privacy::before { content: ""; flex: none; width: 5px; height: 5px; box-sizing: border-box; border: 1px solid var(--amber); opacity: .8; }
+.bar__privacy:hover { color: var(--paper); }
+
+/* sheet: privacy */
+.m-privacy { max-width: 68ch; margin: 0 auto; padding-top: 22px; }
+.m-privacy__choice { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px 24px; padding: 16px 18px; border: 1px solid var(--amber-line); background: rgba(226,134,15,.04); }
+.m-privacy__now { display: flex; flex-direction: column; gap: 8px; min-width: 0; margin: 0; }
+.m-privacy__label { font: 400 9.5px/1.25 var(--f-hud); font-stretch: 87.5%; letter-spacing: .1em; text-transform: uppercase; color: var(--amber); }
+.m-privacy__state { font: 600 22px/1.1 var(--f-display); font-stretch: 85%; letter-spacing: .01em; color: var(--paper); }
+.m-privacy__choice.is-off .m-privacy__state { font: 400 15px/1.45 var(--f-display); letter-spacing: 0; color: var(--paper-dim); }
+/* the pair is sized as a unit: both buttons as wide as the longer label, in either language */
+.m-privacy__btns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.m-privacy__btns .m-choice { min-width: 172px; height: 44px; }
+.m-privacy__top { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; margin-top: 22px; padding-bottom: 14px; border-bottom: 1px solid var(--amber-line); }
+.m-privacy__lang { flex: none; display: flex; }
+.m-privacy__lang button { height: 28px; padding: 0 12px; border: 1px solid var(--amber-line); font: 500 9.5px/1 var(--f-meta); letter-spacing: .14em; text-transform: uppercase; color: var(--paper-dim); transition: background .15s, color .15s, border-color .15s; }
+.m-privacy__lang button + button { border-left-color: transparent; }
+.m-privacy__lang button:hover { color: var(--paper); }
+.m-privacy__lang button[aria-pressed="true"] { background: var(--amber); border-color: var(--amber); color: var(--ink); }
+.m-privacy__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px; margin: 0; font: 400 9.5px/1.4 var(--f-meta); letter-spacing: .08em; text-transform: uppercase; color: var(--paper-dim); }
+.m-privacy__meta b { font-weight: 500; color: var(--paper); }
+.m-privacy__meta .m-ext { font-size: 9.5px; }
+.m-privacy__title { margin: 28px 0 0; font: 700 clamp(34px, 6vw, 52px)/.92 var(--f-num); text-transform: uppercase; color: var(--paper); text-wrap: balance; }
+.m-privacy__intro { margin: 14px 0 0; font: 300 19px/1.4 var(--f-display); color: var(--paper-dim); text-wrap: pretty; }
+.m-privacy__sec { margin-top: 28px; }
+.m-privacy__h { display: flex; align-items: center; gap: 8px; margin: 0; padding-bottom: 9px; border-bottom: 1px solid var(--seam); font: 400 10px/1.25 var(--f-hud); font-stretch: 87.5%; letter-spacing: .1em; text-transform: uppercase; color: var(--amber); }
+.m-privacy__h::before { content: ""; flex: none; width: 6px; height: 6px; background: var(--amber); }
+.m-privacy__sec p, .m-privacy__sec li { font: 400 15px/1.6 var(--f-display); color: rgba(246,232,213,.88); text-wrap: pretty; }
+.m-privacy__sec p { margin: 10px 0 0; }
+.m-privacy__sec ul { margin: 10px 0 0; padding: 0; list-style: none; }
+.m-privacy__sec li { position: relative; padding-left: 20px; }
+.m-privacy__sec li + li { margin-top: 6px; }
+.m-privacy__sec li::before { content: ""; position: absolute; left: 2px; top: .8em; width: 9px; height: 1px; background: var(--amber); }
+/* fingers: the language switch and the contact link become full 44px targets */
+@media (pointer: coarse) {
+  .m-privacy__lang button { height: 44px; padding: 0 16px; }
+  .m-privacy__meta .m-ext { display: inline-flex; align-items: center; min-height: 44px; }
+}
+
 /* touch screens get colour straight away */
 @media (hover: none) {
   .m-video__thumb img, .m-vplayer__start img, .m-ig__item img, .m-juliet__img img { filter: none; }
@@ -634,6 +706,15 @@ html.is-keys .board .m-deck:is([data-state="armed"], [data-audio="blocked"]) .m-
   .dock__unk .m-unknown { font-size: 16px; line-height: 1; letter-spacing: .04em; }
   .dock .dock__unk:focus-visible { outline-color: #fff; outline-offset: -3px; }
 
+  /* Privacy: right end of the next-date row (raised over Juliet's open button so the whole 44px target is its own) */
+  .bar__privacy { position: absolute; z-index: 16; right: 16px; top: calc(var(--sat) + 52px); height: 28px; }
+  .bar__privacy::after { content: ""; position: absolute; left: -12px; right: -16px; top: 50%; height: 44px; margin-top: -22px; }
+  .next { right: 104px; }
+  /* the consent line takes the directive's place, just above the strip; Accept / Decline split the width */
+  .consent { position: absolute; z-index: 15; left: 16px; right: 16px; bottom: calc(var(--dock-h) + var(--strip-gap) + var(--strip-h) + 14px + var(--sab)); }
+  .consent .m-choice { flex: 1 1 0; min-width: 0; height: 44px; }
+  .consent__more::after { content: ""; position: absolute; left: -10px; right: -14px; top: -17px; bottom: -17px; }
+
   /* sheets go full screen */
   /* a definite track: with the implicit auto row, height:100% resolved against the content and the body never scrolled */
   .sheet { padding: 0; grid-template: minmax(0, 1fr) / minmax(0, 1fr); }
@@ -656,6 +737,8 @@ html.is-keys .board .m-deck:is([data-state="armed"], [data-audio="blocked"]) .m-
   .m-juliet__gallery, .sheet .m-ig { grid-template-columns: repeat(2, 1fr); }
   .sheet .m-video__btn { grid-template-columns: 120px minmax(0, 1fr); column-gap: 12px; }
   .sheet .m-video__title { font-size: 17px; }
+  .m-privacy__btns { width: 100%; }
+  .m-privacy__btns .m-choice { min-width: 0; padding: 0 10px; white-space: normal; text-align: center; line-height: 1.25; }
   /* full-screen sheet: the picture always fits on screen (landscape phones), title row may scroll */
   .m-player__frame { width: min(100%, calc((100dvh - var(--sat) - var(--sab) - 100px) * 16 / 9)); }
   html.is-playing .m-player__frame { width: min(100%, calc((100dvh - var(--sat) - var(--sab) - 144px) * 16 / 9)); }
@@ -705,6 +788,11 @@ html.is-keys .board .m-deck:is([data-state="armed"], [data-audio="blocked"]) .m-
     .m-deck[data-audio="blocked"] .m-deck__title { line-height: 12px; }
     .dock :is(button, a) { font-size: 11px; gap: 7px; }
     .dock__unk .m-unknown { font-size: 18px; }
+    .bar__privacy { right: 24px; top: calc(var(--sat) + 58px); height: 32px; font-size: 11px; }
+    .next { right: 128px; }
+    .consent { left: 0; right: 0; margin: 0 auto; width: min(470px, 100% - 48px); padding: 14px 16px 16px; }
+    .consent__text { font-size: 17px; }
+    .consent__more { font-size: 10.5px; }
     /* wide tablets: the radio sheet gets the desktop head and status row back */
     @media (min-width: 760px) {
       .m-radio__head { grid-template-columns: auto minmax(0, 1fr); column-gap: 28px; row-gap: 12px; }
@@ -732,10 +820,28 @@ html.is-keys .board .m-deck:is([data-state="armed"], [data-audio="blocked"]) .m-
     .console { right: 0; margin: 0 auto; width: min(640px, 100% - 32px); }
     .m-deck[data-state="playing"] { --rule-x: 0px; right: 0; margin: 0 auto; width: calc(min(640px, 100% - 32px) - 32px); padding: 5px 0; }
     .m-deck__stop { right: 0; width: 56px; }
+    /* Privacy moves into the bar (the next-date row is gone and the band below holds the consent line) */
+    .bar__privacy { top: var(--sat); right: auto; left: 50%; height: 51px; padding: 0 12px; transform: translateX(-50%); }
+    .bar__privacy:focus-visible { outline-offset: -8px; } /* the bar is the top edge: keep the ring on screen */
+    /* the consent line: one row centred in the band between the bar and the strip, as wide as the strip */
+    .consent { left: 0; right: 0; bottom: auto; top: calc(50% + (var(--sat) + 52px - var(--dock-h) - var(--strip-gap) - var(--strip-h) - var(--sab)) / 2); transform: translateY(-50%); margin: 0 auto; width: min(640px, 100% - 32px);
+      display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 16px; row-gap: 5px; align-items: center; padding: 10px 12px 10px 14px; animation: none; }
+    .consent__head { grid-column: 1; grid-row: 1; }
+    .consent__text { grid-column: 1; grid-row: 2; font-size: 13px; line-height: 1.25; }
+    .consent__actions { grid-column: 2; grid-row: 1 / 3; margin: 0; }
+    .consent .m-choice { flex: 0 0 104px; }
   }
   @media (max-height: 360px) {
     .directive { display: none; }
   }
+}
+/* narrow phones: the privacy choice stacks so each label stays on one line, still two identical
+   buttons (the Spanish labels are longer, so they stack a little earlier) */
+@media (max-width: 459px) {
+  .m-privacy[lang="es"] .m-privacy__btns { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 399px) {
+  .m-privacy__btns { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 379px) {
   .dock :is(button, a) { letter-spacing: .06em; }
@@ -748,6 +854,35 @@ html.is-keys .board .m-deck:is([data-state="armed"], [data-audio="blocked"]) .m-
 }
 @media not all and (min-width: 1000px) and (min-height: 600px) and (min-aspect-ratio: 6/5) {
   @media (max-width: 479px) { .sheet__brand { display: none; } }
+  /* the window's copy of the consent line on phones: stacked like the main line, Accept / Decline split the width */
+  .sheet__consent { grid-template-columns: minmax(0, 1fr); gap: 8px; padding: 12px 16px 14px; }
+  .sheet__consent .consent__head { justify-content: space-between; }
+  .sheet__consent .consent__text { font-size: 13.5px; line-height: 1.28; }
+  .sheet__consent .consent__actions { grid-column: 1; grid-row: 3; }
+  .sheet__consent .m-choice { flex: 1 1 0; min-width: 0; height: 44px; }
+  /* tablets and landscape phones: one band again, the answers on the right */
+  @media (min-width: 600px) {
+    .sheet__consent { grid-template-columns: minmax(0, 1fr) auto; gap: 5px 20px; padding: 10px 16px 11px; }
+    .sheet__consent .consent__head { justify-content: flex-start; gap: 6px 20px; }
+    .sheet__consent .consent__actions { grid-column: 2; grid-row: 1 / 3; }
+    .sheet__consent .m-choice { flex: 0 0 112px; }
+  }
+  @media (max-height: 520px) {
+    .sheet__consent .consent__text { font-size: 12.5px; line-height: 1.25; }
+    .sheet__consent .m-choice { flex-basis: 104px; }
+  }
+  /* landscape phones: an open window has no room for the band without pushing its content (an
+     episode's ▶ Play episode) off screen, so the question waits, in full, on the main screen's line.
+     Nothing loads before an answer either way. */
+  @media (orientation: landscape) and (max-height: 520px) {
+    .sheet__consent { display: none; }
+  }
+  /* very short landscape screens (under 340px tall) have no room for the line between the bar and the
+     UNKNOWN strip: it waits for portrait, and the Privacy link in the bar still offers the choice */
+  @media (orientation: landscape) and (max-height: 339px) {
+    .consent { display: none; }
+    html.has-consent-line .directive { visibility: visible; }
+  }
 }
 
 /* =========================== DESKTOP BOARD (1280×800, scaled) =========================== */
@@ -805,6 +940,18 @@ html.is-keys .board .m-deck:is([data-state="armed"], [data-audio="blocked"]) .m-
   .directive__head { display: flex; justify-content: space-between; height: 10px; margin-bottom: 10px; line-height: 10px; }
   .m-quote__text { font-size: 26px; }
   .quote[data-long] .m-quote__text { font-size: 22px; }
+
+  /* the consent line sits in the directive's slot (448–832), its foot on the directive's floor line (590) */
+  .consent { position: absolute; z-index: 7; left: 448px; bottom: 210px; width: 384px; }
+  /* Privacy: the board's foot, under the console's right edge */
+  .bar__privacy { position: absolute; right: 18px; top: 776px; height: 22px; padding: 0 6px; }
+  .bar__privacy:focus-visible { outline-offset: 0; } /* the board's last pixels: keep the ring inside */
+  /* touch (iPad): 44 screen px whatever the board scale */
+  @media (pointer: coarse) {
+    .consent .m-choice { height: max(36px, calc(44px / var(--s, 1))); }
+    .consent__more::after { content: ""; position: absolute; left: -10px; right: -14px; top: 50%; height: max(36px, calc(44px / var(--s, 1))); transform: translateY(-50%); }
+    .bar__privacy::after { content: ""; position: absolute; left: -12px; right: -12px; top: -8px; height: max(34px, calc(46px / var(--s, 1))); }
+  }
 
   /* windows: .win (drag: left/top) > .win__float (parallax) > .win__drift (drift) > .win__box (the only fill) */
   /* Every window is as tall as its content; the page script stacks them by setting --y (a drag writes an inline
@@ -1011,6 +1158,8 @@ html.is-keys .board .m-deck:is([data-state="armed"], [data-audio="blocked"]) .m-
   .board .w-sets .m-episode__meta, .board .sets__all, .board .gigs__book, .board .ig-card__go { font-size: var(--f95); }
   .board .m-flag, .board .w-sets .m-episode__code, .board .w-sets .m-episode__soon, .board .m-vplayer__start::before, .board .m-vplayer__start::after, .board .m-gig__m, .board .m-gig__meta, .board .foot__cd .m-cd i { font-size: var(--f9); }
   .board .m-ext, .board .m-vplayer__more, .board .m-deck__go, .board .latest__archive, .board .air__cd .m-cd i, .board .m-radio-latest__play { font-size: var(--f10); }
+  .board .bar__privacy, .board .consent__more { font-size: var(--f95); }
+  .board .m-choice { font-size: var(--f10); }
 }
 
 /* =========================== REDUCED MOTION =========================== */
@@ -1023,6 +1172,7 @@ html.is-keys .board .m-deck:is([data-state="armed"], [data-audio="blocked"]) .m-
   .beam { display: none; }
   .sheet__frame, .sheet__frame > .corner { transform: none; transition: none; }
   .win.is-snapping, .win.is-realigning, .quote, .m-episode__btn { transition: none; }
+  .consent, .sheet__consent { animation: none; }
 }
 </style>
 </head>
@@ -1057,7 +1207,18 @@ html.is-keys .board .m-deck:is([data-state="armed"], [data-audio="blocked"]) .m-
     </nav>
     <button type="button" class="realign hud" hidden>↺ Realign</button>
     <div class="bar__status hud"><span class="led" aria-hidden="true"></span><span data-m="juliet-code"></span><span class="bar__bpm" data-m="bpm"></span><span data-m="clock"></span></div>
+    <button type="button" class="bar__privacy" data-open="privacy">Privacy</button>
   </header>
+
+  <!-- the consent line: only on the live domain, until the visitor chooses (the engine un-hides it) -->
+  <section class="consent" data-m="consent" aria-labelledby="consent-t" hidden>
+    <div class="consent__head"><p class="consent__label hud" id="consent-t"><span class="consent__sq" aria-hidden="true"></span><span data-m="consent-label">Privacy · Analytics</span></p><button type="button" class="consent__more" data-open="privacy" data-m="consent-more">Privacy note</button></div>
+    <p class="consent__text" data-m="consent-text">Allow Google Analytics to count this visit? Google Analytics and Tag Manager load only if you accept.</p>
+    <div class="consent__actions">
+      <button type="button" class="m-choice" data-consent="granted">Accept</button>
+      <button type="button" class="m-choice" data-consent="denied">Decline</button>
+    </div>
+  </section>
 
   <h1 class="mast" aria-label="MAROATA, techno sets"><span>MAROATA</span></h1>
 
@@ -1167,6 +1328,16 @@ html.is-keys .board .m-deck:is([data-state="armed"], [data-audio="blocked"]) .m-
       <span class="sheet__brand hud"><span class="sheet__brand-core">MAROATA · <span data-m="juliet-code"></span></span><span class="sheet__brand-unk">UNKNOWN · Radio show</span></span>
       <button type="button" class="sheet__close hud" data-m="sheet-close" aria-label="Close">[ × ] Close</button>
     </div>
+    <!-- the same consent line, at the top of every window while it is unanswered: a visitor who lands on a shared
+         link (#episode-…) answers without closing it (the engine paints, shows and hides both copies together) -->
+    <section class="sheet__consent" data-m="consent" aria-labelledby="consent-t-sheet" hidden>
+      <div class="consent__head"><p class="consent__label hud" id="consent-t-sheet"><span class="consent__sq" aria-hidden="true"></span><span data-m="consent-label">Privacy · Analytics</span></p><button type="button" class="consent__more" data-open="privacy" data-m="consent-more">Privacy note</button></div>
+      <p class="consent__text" data-m="consent-text">Allow Google Analytics to count this visit? Google Analytics and Tag Manager load only if you accept.</p>
+      <div class="consent__actions">
+        <button type="button" class="m-choice" data-consent="granted">Accept</button>
+        <button type="button" class="m-choice" data-consent="denied">Decline</button>
+      </div>
+    </section>
     <div class="sheet__body" data-m="sheet-body"></div>
   </div>
 </div>

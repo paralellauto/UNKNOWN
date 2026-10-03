@@ -526,6 +526,7 @@
       : `<iframe src="${ytEmbed(v.id)}" title="${esc(vTitle(v))}" data-yt-frame="${esc(v.id)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>`;
     box.dataset.state = "playing";
     root.classList.add("is-video-playing");
+    track("video_play", { video_id: v.id, video_title: vTitle(v) });
     // The pressed poster is gone; keep keyboard and screen-reader users on the player.
     if (document.activeElement === document.body || !document.activeElement) {
       const f = $(".m-vplayer__frame iframe, .m-vplayer__frame a", box);
@@ -692,6 +693,8 @@
     $(".m-deck__title", deck).textContent = `${s.code ? s.code + " — " : ""}${s.title || "Set"}`;
     deck.dataset.kind = kind;
     const ifr = $("iframe", frame);
+    const lt = listenTracker(kind, i);
+    activeTracker = { seq, lt };
     loadScApi().then((SC) => {
       if (seq !== mountSeq || !ifr.isConnected) return;
       const w = SC.Widget(ifr);
@@ -706,10 +709,87 @@
           watchForBlock(seq);
         }
       });
-      w.bind(E.PLAY, () => { if (seq === mountSeq) onAudioPlay(mounted.kind, mounted.i); });
-      w.bind(E.PAUSE, () => { if (seq === mountSeq && deck.dataset.audio === "on") setAudio("paused"); });
-      w.bind(E.FINISH, () => { if (seq === mountSeq) setAudio("paused"); });
+      w.bind(E.PLAY, () => {
+        if (seq !== mountSeq) return;
+        onAudioPlay(mounted.kind, mounted.i);
+        lt.play(w);
+      });
+      w.bind(E.PAUSE, () => {
+        if (seq !== mountSeq) return;
+        if (deck.dataset.audio === "on") setAudio("paused");
+        lt.hold();
+      });
+      w.bind(E.FINISH, () => {
+        if (seq !== mountSeq) return;
+        setAudio("paused");
+        lt.finish();
+      });
+      if (E.PLAY_PROGRESS) w.bind(E.PLAY_PROGRESS, (e) => { if (seq === mountSeq) lt.progress(e); });
+      if (E.SEEK) w.bind(E.SEEK, () => { if (seq === mountSeq) lt.hold(); });
     }).catch(() => { if (seq === mountSeq) disarm(); });
+  }
+
+  /* Analytics for one loaded episode: episode_play once per load (api.js may report PLAY twice
+     at the start, and again on every resume), then 25/50/75/90 % and every 15 minutes of time
+     actually listened, not the position: a tick only counts what the wall clock allows, and a
+     pause, seek or finish restarts the count from the next tick. Nothing is sent per tick.
+     Only time listened while analytics is on counts. Accepted mid-episode: the play is reported
+     then and the count starts at that moment. Withdrawn and allowed again on the same page: the
+     play already reported is not sent again, and the count and the milestones already sent
+     carry on from where they stopped. */
+  const MILESTONES = [25, 50, 75, 90];
+  let activeTracker = null; // { seq, lt } of the item loaded in the deck
+  function listenTracker(kind, i) {
+    const item = kind === "episode" ? episodes()[i] : sets()[i];
+    const id = (item && item.code) || (kind === "set" ? `MRT-${pad(i)}` : "");
+    const base = () => ({ episode_id: id, episode_title: (item && item.title) || "" });
+    let started, reported, listened, last, lastAt, dur, sent, nextListen;
+    // reported: this play-through's episode_play reached the dataLayer (a replay after FINISH is a new one)
+    const reset = () => { started = false; reported = false; listened = 0; last = null; lastAt = 0; dur = 0; sent = {}; nextListen = 15; };
+    reset();
+    return {
+      play(w) {
+        last = null;
+        if (!dur) {
+          try { if (w && typeof w.getDuration === "function") w.getDuration((ms) => { if (Number(ms) > 0) dur = Number(ms); }); } catch (e) { /* ignore */ }
+        }
+        if (started) return;
+        started = true;
+        reported = track("episode_play", base());
+      },
+      hold() { last = null; },
+      progress(e) {
+        if (!e || !Number.isFinite(Number(e.currentPosition))) return;
+        const pos = Number(e.currentPosition);
+        const now = Date.now();
+        if (last != null && tracking) {
+          const d = pos - last;
+          if (d > 0 && d <= now - lastAt + 2000) listened += d;
+        }
+        last = pos;
+        lastAt = now;
+        if (!dur && Number(e.relativePosition) > 0.01) dur = pos / Number(e.relativePosition);
+        if (dur > 0) {
+          MILESTONES.forEach((m) => {
+            if (!sent[m] && listened >= dur * m / 100) { sent[m] = true; track("episode_progress", Object.assign(base(), { percent: m })); }
+          });
+        }
+        while (listened >= nextListen * 60000) {
+          track("episode_listen", Object.assign(base(), { listened_minutes: nextListen }));
+          nextListen += 15;
+        }
+      },
+      finish() {
+        track("episode_complete", base());
+        reset(); // a replay counts again
+      },
+      // analytics just started (or started again): counting resumes from this moment; the play
+      // is reported only if this play-through has not reported it already
+      consent() {
+        last = null;
+        if (started && !reported) reported = track("episode_play", base());
+      },
+    };
   }
 
   // Touch screens: load the newest episode's player without playing it, so the first
@@ -812,7 +892,7 @@
 
   /* ---------- sheet (expanded view of any module) ---------- */
   // No prototype, so hashes such as #toString or #constructor are not mistaken for sheets.
-  const TITLES = Object.assign(Object.create(null), { sets: "Sets", videos: "Visuals", gigs: "Dates", posts: "Transmissions", post: "Transmission", insta: "Instagram", juliet: "Juliet", radio: "Radio", episode: "Episode" });
+  const TITLES = Object.assign(Object.create(null), { sets: "Sets", videos: "Visuals", gigs: "Dates", posts: "Transmissions", post: "Transmission", insta: "Instagram", juliet: "Juliet", radio: "Radio", episode: "Episode", privacy: "Privacy" });
   let sheet, sheetBody, sheetTitle, lastFocus, closeTimer;
   let sheetOpen = false;
   let pushed = 0; // history entries this page added for open sheets
@@ -841,6 +921,8 @@
         return R.radio();
       case "episode":
         return R.episode(arg);
+      case "privacy":
+        return R.privacy();
       default:
         return "";
     }
@@ -855,7 +937,8 @@
       if (playing.kind) stop(); // the sheet's video autoplays: one source at a time
     }
     sheet.dataset.type = type;
-    sheetTitle.textContent = TITLES[type];
+    sheetTitle.textContent = type === "privacy" ? PRIV_UI[privacyLang].sheet : TITLES[type];
+    closeLabel(type === "privacy" ? PRIV_UI[privacyLang].close : "Close");
     sheetBody.innerHTML = sheetContent(type, arg);
     tick();
     sheetBody.scrollTop = 0;
@@ -870,12 +953,24 @@
       const hash = type === "post" ? `post-${arg}` : type === "episode" ? `episode-${arg}` : type === "videos" && arg ? `videos-${arg}` : type;
       try { history.pushState({ sheet: type, arg }, "", "#" + hash); pushed++; } catch (e) { /* sandboxed */ }
     }
+    // analytics: every sheet that opens is a page view (deep links and back/forward included)
+    view = { section: type, arg };
+    pageView();
+  }
+
+  // the close button speaks the privacy window's language while it is open in Spanish
+  function closeLabel(word) {
+    const b = $("[data-m='sheet-close']", sheet);
+    if (!b || b.getAttribute("aria-label") === word) return;
+    b.textContent = `[ × ] ${word}`;
+    b.setAttribute("aria-label", word);
   }
 
   function close(fromHistory) {
     if (!sheet || sheet.hidden || !sheet.classList.contains("is-open")) return;
     sheet.classList.remove("is-open");
     sheetOpen = false;
+    view = { section: "home", arg: undefined };
     root.classList.remove("has-sheet");
     closeTimer = setTimeout(() => {
       sheet.hidden = true;
@@ -898,6 +993,262 @@
     if (h.startsWith("episode-")) return open("episode", h.slice(8), true);
     if (TITLES[h] && h !== "post" && h !== "episode") return open(h, undefined, true);
     return close(true); // any other fragment (#onair, #top, …) means no sheet
+  }
+
+  /* ---------- analytics: Google Tag Manager, only after the visitor accepts ----------
+     Nothing from Google Tag Manager or Google Analytics loads before Accept: no gtm.js, no
+     dataLayer. (YouTube thumbnails and titles are content, not analytics.) It only runs on the
+     addresses in content.js analytics.domains (never on localhost, previews or link-only pages).
+     The choice lives in localStorage "mrt-consent" as { v, analytics, at }; raising
+     analytics.consentVersion asks every visitor again. Storage blocked: kept for this page only. */
+  const AN = D.analytics || {};
+  const GTM_ID = String(AN.gtm || "").trim();
+  const GA4_ID = String(AN.ga4 || "").trim();
+  const CONSENT_KEY = "mrt-consent";
+  const CONSENT_V = Number(AN.consentVersion) || 1;
+  const analyticsOn = !!GTM_ID && !linkOnly && (AN.domains || []).map(String).indexOf(location.hostname) >= 0;
+  let consentMem = null; // the choice when storage is blocked
+  let gtmStarted = false; // gtm.js is on this page
+  let tracking = false; // dataLayer pushes allowed: granted, started and not withdrawn
+  let view = { section: "home", arg: undefined }; // what the visitor is looking at, for page views
+
+  function readConsent() {
+    let c = consentMem;
+    try {
+      const s = localStorage.getItem(CONSENT_KEY);
+      if (s) c = JSON.parse(s);
+    } catch (e) { /* storage blocked: memory only */ }
+    return c && c.v === CONSENT_V && (c.analytics === "granted" || c.analytics === "denied") ? c : null;
+  }
+  function writeConsent(choice) {
+    consentMem = { v: CONSENT_V, analytics: choice, at: new Date().toISOString() };
+    try { localStorage.setItem(CONSENT_KEY, JSON.stringify(consentMem)); } catch (e) { /* storage blocked: this page only */ }
+  }
+
+  // Google's own helper: it pushes the arguments object, which is what GTM reads.
+  function gtag() { window.dataLayer.push(arguments); }
+
+  // Every push carries every key (undefined where it does not apply), so a value from an
+  // earlier event never lingers in GTM's data model. A no-op without consent; returns whether
+  // the push was made.
+  const TRACK_KEYS = ["page_location", "page_title", "section", "episode_id", "episode_title", "percent", "listened_minutes", "video_id", "video_title"];
+  function track(event, params) {
+    if (!tracking) return false;
+    const o = { event };
+    TRACK_KEYS.forEach((k) => (o[k] = params && params[k] != null ? params[k] : undefined));
+    window.dataLayer.push(o);
+    return true;
+  }
+
+  // Human-readable, distinct per view: "UNKNOWN EP-13 · Hookah Lounge — …", "Transmissions · Why 4 a.m. …"
+  function viewTitle(type, arg) {
+    const show = radio().name || "UNKNOWN";
+    if (type === "home") return `${(D.artist && D.artist.name) || "MAROATA"} · ${show}`;
+    if (type === "radio") return `${show} · Radio`;
+    if (type === "episode") {
+      const e = episodes().find((x) => x.code === arg);
+      return `${show} ${arg || ""}${e && e.title ? " · " + e.title : ""}`;
+    }
+    if (type === "post") {
+      const p = posts().find((x) => x.slug === arg);
+      return `Transmissions · ${p ? p.title : arg || ""}`;
+    }
+    return TITLES[type] || type;
+  }
+  function pageView() {
+    track("virtual_page_view", { page_location: location.href, page_title: viewTitle(view.section, view.arg), section: view.section });
+  }
+  // an episode already started on this load (before Accept) is reported from now on
+  function trackerConsent() {
+    if (activeTracker && activeTracker.seq === mountSeq) activeTracker.lt.consent();
+  }
+
+  function startAnalytics() {
+    if (!analyticsOn || tracking) return;
+    if (gtmStarted) {
+      // allowed again after a withdrawal on this same page: GTM is still loaded
+      if (GA4_ID) window["ga-disable-" + GA4_ID] = false;
+      gtag("consent", "update", { analytics_storage: "granted" });
+      tracking = true;
+      pageView();
+      trackerConsent();
+      return;
+    }
+    window.dataLayer = window.dataLayer || [];
+    gtag("consent", "default", { ad_storage: "denied", ad_user_data: "denied", ad_personalization: "denied", analytics_storage: "granted" });
+    gtag("set", "ads_data_redaction", true);
+    window.dataLayer.push({ "gtm.start": new Date().getTime(), event: "gtm.js" });
+    const s = document.createElement("script");
+    s.async = true;
+    s.src = "https://www.googletagmanager.com/gtm.js?id=" + encodeURIComponent(GTM_ID);
+    document.head.appendChild(s);
+    gtmStarted = true;
+    tracking = true;
+    pageView();
+    trackerConsent();
+  }
+
+  // Expire _ga and _ga_<id> host-only and on every parent domain (GA sets them on the registrable one).
+  function clearGaCookies() {
+    const names = document.cookie.split(";").map((c) => c.split("=")[0].trim()).filter((n) => n === "_ga" || n.indexOf("_ga_") === 0);
+    if (!names.length) return;
+    const host = location.hostname;
+    const labels = host.split(".");
+    const domains = [""];
+    if (!/^[\d.]+$/.test(host) && host.indexOf(":") < 0) for (let k = labels.length - 2; k >= 0; k--) domains.push(labels.slice(k).join("."));
+    names.forEach((n) => domains.forEach((d) => {
+      document.cookie = `${n}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; max-age=0; path=/${d ? "; domain=" + d : ""}`;
+    }));
+  }
+
+  const mediaPlaying = () =>
+    (!!deck && deck.dataset.state === "playing" && /^(on|waiting)$/.test(deck.dataset.audio || "")) || root.classList.contains("is-video-playing");
+
+  function stopAnalytics() {
+    if (gtmStarted && tracking) gtag("consent", "update", { analytics_storage: "denied" });
+    if (GA4_ID) window["ga-disable-" + GA4_ID] = true;
+    tracking = false;
+    clearGaCookies();
+    // Reload so GTM is gone from the page; never in the middle of a song or a video
+    // (it then simply does not load on the next visit).
+    if (gtmStarted && !mediaPlaying()) location.reload();
+  }
+
+  // Two copies, painted and shown together: the line on the main screen, and (when the page
+  // has one) the same line at the top of the sheet, for visitors who land on a shared link.
+  function showConsentLine(on) {
+    // the line's buttons are about to disappear: keep keyboard focus nearby (the sheet's
+    // close button inside an open sheet, the Privacy link on the main screen)
+    const line = $$("[data-m='consent']").find((el) => !el.hidden && el.contains(document.activeElement));
+    $$("[data-m='consent']").forEach((el) => (el.hidden = !on));
+    root.classList.toggle("has-consent-line", on);
+    if (!on && line) {
+      const next = sheet && sheet.contains(line) ? $("[data-m='sheet-close']", sheet) : $$("[data-open='privacy']").find(shown);
+      if (next) next.focus({ preventScroll: true });
+    }
+  }
+
+  function choose(choice) {
+    if (!analyticsOn || (choice !== "granted" && choice !== "denied")) return;
+    writeConsent(choice);
+    root.dataset.analytics = choice;
+    showConsentLine(false);
+    paintConsent();
+    if (choice === "granted") startAnalytics(); else stopAnalytics();
+  }
+
+  // The line in the visitor's language (Spanish browsers get Aceptar / Rechazar), the same
+  // rule as the privacy window; switching the window's language switches the line too.
+  function paintLine() {
+    const P = D.privacy || {};
+    const t = PRIV_UI[privacyLang];
+    const text = (privacyLang === "es" && P.promptEs) || P.prompt || "";
+    $$("[data-m='consent']").forEach((line) => {
+      line.setAttribute("lang", privacyLang);
+      if (text) $$("[data-m='consent-text']", line).forEach((el) => (el.textContent = text));
+      $$("[data-m='consent-label']", line).forEach((el) => (el.textContent = t.line));
+      $$("[data-m='consent-more']", line).forEach((el) => (el.textContent = t.more));
+      $$("[data-consent='granted']", line).forEach((el) => (el.textContent = t.accept));
+      $$("[data-consent='denied']", line).forEach((el) => (el.textContent = t.decline));
+    });
+  }
+
+  function initConsent() {
+    const c = analyticsOn ? readConsent() : null;
+    root.dataset.analytics = !analyticsOn ? "off" : c ? c.analytics : "unset";
+    paintLine();
+    showConsentLine(analyticsOn && !c);
+    if (c && c.analytics === "granted") startAnalytics();
+    // A choice made in another tab of the site applies here too: a withdrawal switches
+    // Google Analytics off in every open tab (same path: cookies, ga-disable, reload if idle).
+    if (analyticsOn) addEventListener("storage", (e) => {
+      if (e.key !== CONSENT_KEY && e.key !== null) return; // null: storage cleared
+      try {
+        const now = readConsent();
+        root.dataset.analytics = now ? now.analytics : "unset";
+        showConsentLine(!now);
+        paintConsent();
+        if (now && now.analytics === "granted") startAnalytics();
+        else if (tracking) stopAnalytics();
+      } catch (err) { /* ignore */ }
+    });
+  }
+
+  /* The privacy window: the current choice with two equal buttons, then the notice
+     (English) or the aviso (Spanish). Opens in Spanish for Spanish-language browsers. */
+  let privacyLang = /^es\b/i.test(navigator.language || "") ? "es" : "en";
+  const PRIV_UI = {
+    en: { sheet: "Privacy", label: "Analytics · Google", allow: "Allow analytics", deny: "Don't allow", granted: "Allowed", denied: "Not allowed", unset: "Not chosen yet", since: "since",
+      off: "Analytics is not active on this copy of the site; nothing is sent to Google Analytics here.", none: "This site does not use analytics.",
+      resp: "Responsible", contact: "Contact", updated: "Updated", lang: "Language", close: "Close",
+      line: "Privacy · Analytics", more: "Privacy note", accept: "Accept", decline: "Decline" },
+    es: { sheet: "Privacidad", label: "Analítica · Google", allow: "Permitir analítica", deny: "No permitir", granted: "Permitida", denied: "No permitida", unset: "Sin elegir todavía", since: "desde",
+      off: "La analítica no está activa en esta copia del sitio; aquí no se envía nada a Google Analytics.", none: "Este sitio no usa analítica.",
+      resp: "Responsable", contact: "Contacto", updated: "Actualizado", lang: "Idioma", close: "Cerrar",
+      line: "Analítica", more: "Aviso de privacidad", accept: "Aceptar", decline: "Rechazar" },
+  };
+  const numDate = (dt) => `${pad(dt.getDate())}.${pad(dt.getMonth() + 1)}.${dt.getFullYear()}`;
+
+  function consentStateText() {
+    const t = PRIV_UI[privacyLang];
+    if (!analyticsOn) return GTM_ID ? t.off : t.none;
+    const c = readConsent();
+    if (!c) return t.unset;
+    const at = new Date(c.at);
+    return `${t[c.analytics]}${isNaN(at) ? "" : ` ${t.since} ${numDate(at)}`}`;
+  }
+  function paintConsent() {
+    const c = analyticsOn ? readConsent() : null;
+    $$("[data-m='consent-state']").forEach((el) => (el.textContent = consentStateText()));
+    $$(".m-privacy [data-consent]").forEach((b) => b.setAttribute("aria-pressed", String(!!c && c.analytics === b.dataset.consent)));
+  }
+
+  R.privacy = function () {
+    const P = D.privacy || {};
+    const doc = (privacyLang === "es" ? P.aviso : P.notice) || P.notice || {};
+    const t = PRIV_UI[privacyLang];
+    const c = analyticsOn ? readConsent() : null;
+    const pressed = (v) => String(!!c && c.analytics === v);
+    const body = (list) => (list || []).map((b) => Array.isArray(b)
+      ? `<ul>${b.map((li) => `<li>${esc(li)}</li>`).join("")}</ul>`
+      : `<p>${esc(b)}</p>`).join("");
+    const meta = [
+      P.controller ? `<span>${t.resp} <b>${esc(P.controller)}</b></span>` : "",
+      P.contact && P.contact.url ? `<span>${t.contact} ${ext(P.contact.url, esc(P.contact.label || P.contact.url) + " ↗")}</span>` : "",
+      hasDate(P.updated ? { date: P.updated } : null) ? `<span>${t.updated} <time datetime="${esc(P.updated)}">${numDate(toDate(P.updated))}</time></span>` : "",
+    ].filter(Boolean).join("");
+    return `<div class="m-privacy" lang="${privacyLang}">
+      <div class="m-privacy__choice${analyticsOn ? "" : " is-off"}">
+        <p class="m-privacy__now"><span class="m-privacy__label">${t.label}</span><span class="m-privacy__state" data-m="consent-state" role="status">${esc(consentStateText())}</span></p>
+        ${analyticsOn ? `<div class="m-privacy__btns">
+          <button type="button" class="m-choice" data-consent="granted" aria-pressed="${pressed("granted")}">${t.allow}</button>
+          <button type="button" class="m-choice" data-consent="denied" aria-pressed="${pressed("denied")}">${t.deny}</button>
+        </div>` : ""}
+      </div>
+      <div class="m-privacy__top">
+        <div class="m-privacy__lang" role="group" aria-label="${t.lang}">
+          <button type="button" data-privacy-lang="en" lang="en" aria-pressed="${privacyLang === "en"}">English</button>
+          <button type="button" data-privacy-lang="es" lang="es" aria-pressed="${privacyLang === "es"}">Español</button>
+        </div>
+        ${meta ? `<p class="m-privacy__meta">${meta}</p>` : ""}
+      </div>
+      <h2 class="m-privacy__title">${esc(doc.title || t.sheet)}</h2>
+      ${doc.intro ? `<p class="m-privacy__intro">${esc(doc.intro)}</p>` : ""}
+      ${(doc.sections || []).map((s) => `<section class="m-privacy__sec"><h3 class="m-privacy__h">${esc(s.heading || "")}</h3>${body(s.body)}</section>`).join("")}
+    </div>`;
+  };
+
+  function setPrivacyLang(lang) {
+    if (!PRIV_UI[lang] || !sheet || sheet.dataset.type !== "privacy") return;
+    privacyLang = lang;
+    const top = sheetBody.scrollTop;
+    sheetBody.innerHTML = R.privacy();
+    sheetTitle.textContent = PRIV_UI[lang].sheet;
+    closeLabel(PRIV_UI[lang].close);
+    paintLine();
+    sheetBody.scrollTop = top;
+    const b = $(`[data-privacy-lang="${lang}"]`, sheetBody);
+    if (b) b.focus({ preventScroll: true });
   }
 
   /* ---------- keep keyboard focus inside an open sheet (role=dialog aria-modal) ---------- */
@@ -1110,7 +1461,7 @@
   /* ---------- events ---------- */
   function bind() {
     document.addEventListener("click", (e) => {
-      const t = e.target.closest("[data-play],[data-play-episode],[data-show-episode],[data-play-video],[data-video],[data-post],[data-open],[data-m='sheet-close']");
+      const t = e.target.closest("[data-play],[data-play-episode],[data-show-episode],[data-play-video],[data-video],[data-post],[data-open],[data-consent],[data-privacy-lang],[data-m='sheet-close']");
       if (!t) {
         if (sheet && !sheet.hidden && e.target === sheet) close();
         return;
@@ -1123,6 +1474,8 @@
       if (t.dataset.video != null) return open("videos", t.dataset.video);
       if (t.dataset.post != null) return open("post", t.dataset.post);
       if (t.dataset.open) return open(t.dataset.open);
+      if (t.dataset.consent) return choose(t.dataset.consent);
+      if (t.dataset.privacyLang) return setPrivacyLang(t.dataset.privacyLang);
     });
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") return close();
@@ -1160,7 +1513,8 @@
   const M = {
     data: D, $, $$, esc, asset, pad, parts, reduced, finePointer, desktopQuery,
     upcomingGigs, render: R, play, playEpisode, playVideo, resetVideos, stop, open, close, fitBoard, parallax, touchFirst,
-    broadcast, episodes,
+    broadcast, episodes, track,
+    consent: { choose, read: readConsent, active: analyticsOn },
     onTick: (fn) => tickers.push(fn), scale: 1,
   };
   window.M = M;
@@ -1195,6 +1549,7 @@
     tick();
     setInterval(tick, 1000);
     if (location.hash) openFromHash();
+    initConsent(); // after a deep link has opened its sheet, so the first page view is that sheet
     requestAnimationFrame(() => root.classList.add("is-ready"));
     document.dispatchEvent(new CustomEvent("maroata:ready"));
   }
