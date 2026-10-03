@@ -476,9 +476,14 @@
     const p = hasDate(e) ? parts(e.date) : null;
     const older = all[i + 1];
     const newer = all[i - 1];
+    // A title that wraps breaks at its dash and keeps the dash at the end of the line ("Radio Show —" / "Ep. 14"):
+    // each part is one unit (it still wraps inside itself when longer than the line). In the links below, the dash
+    // stays on its line too, and the arrow never ends up alone with the last word.
+    const heading = (t) => (/ [—–] /.test(t) ? esc(t).replace(/ ([—–]) /g, "\u00a0$1\n").split("\n").map((x) => `<span class="m-ep__part">${x}</span>`).join(" ") : esc(t));
+    const keep = (t) => esc(t).replace(/ ([—–] )/g, "\u00a0$1").replace(/ (\S+)$/, "\u00a0$1");
     return `<article class="m-ep" data-episode="${i}">
       <p class="m-ep__meta"><span class="m-unknown m-ep__show">${esc(radio().name || "UNKNOWN")}</span><span>${esc(e.code)}</span>${p ? `<time datetime="${esc(e.date)}">${p.d} ${p.m} ${p.y}</time>` : ""}${e.length ? lengthTag(e.length) : ""}${e.sample ? `<span class="m-flag">Sample</span>` : ""}</p>
-      <h2 class="m-ep__title">${esc(e.title || "Untitled")}</h2>
+      <h2 class="m-ep__title">${heading(e.title || "Untitled")}</h2>
       <p class="m-ep__guest">${e.guest ? esc(e.guest) : radio().host ? "Hosted by " + esc(radio().host) : ""}</p>
       <div class="m-ep__actions">
         ${e.url ? `<button type="button" class="m-ep__play" data-play-episode="${i}"><span class="m-ep__icon" aria-hidden="true"></span><span class="m-play-text">Play episode</span></button>${ext(e.url, "Open on SoundCloud ↗")}` : `<span class="m-ep__soon">Recording not uploaded yet</span>`}
@@ -486,8 +491,8 @@
       <h3 class="m-ep__sub">Tracklist</h3>
       ${R.tracklist(e)}
       <nav class="m-reader__nav">
-        ${older ? `<button type="button" data-show-episode="${esc(older.code)}">← ${esc(older.code)} ${esc(older.title || "")}</button>` : "<span></span>"}
-        ${newer ? `<button type="button" data-show-episode="${esc(newer.code)}">${esc(newer.code)} ${esc(newer.title || "")} →</button>` : "<span></span>"}
+        ${older ? `<button type="button" data-show-episode="${esc(older.code)}">←\u00a0${esc(older.code)} ${keep(older.title || "")}</button>` : "<span></span>"}
+        ${newer ? `<button type="button" data-show-episode="${esc(newer.code)}">${esc(newer.code)} ${keep(newer.title || "")}\u00a0→</button>` : "<span></span>"}
       </nav></article>`;
   };
 

@@ -369,6 +369,8 @@ html.is-keys .board .m-deck:is([data-state="armed"], [data-audio="blocked"]) .m-
 .m-reader__nav button:last-child { text-align: right; }
 .m-reader__nav button:only-of-type { max-width: 100%; } /* the missing side is an empty <span>: a lone link may use the whole row */
 .m-reader__nav button:hover { color: var(--paper); }
+.m-ep__part { display: inline-block; max-width: 100%; } /* an episode title breaks at its dash first ("Radio Show —" / "Ep. 14"); a long part still wraps inside */
+.m-ep .m-reader__nav { align-items: flex-start; } /* a neighbour whose title wraps to two lines: both start on the same line */
 /* sheet: visuals */
 /* capped so the whole picture and its title row fit inside the sheet without scrolling */
 .m-player__frame { position: relative; width: min(100%, calc((min(86vh, 780px) - 170px) * 16 / 9)); aspect-ratio: 16 / 9; margin: 14px auto 0; background: repeating-linear-gradient(135deg, rgba(226,134,15,.08) 0 2px, transparent 2px 8px), #000; outline: 1px solid var(--amber-line); }

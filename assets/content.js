@@ -54,10 +54,24 @@ window.MAROATA = {
     schedule: null, // to be announced
     episodes: [
       {
+        code: "EP-14",
+        title: "Radio Show",
+        url: "https://soundcloud.com/eduardo-love/unknown-radio-show-ep-14",
+        embed: "https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/tracks/soundcloud%253Atracks%253A2412280104&color=%230a0a08&inverse=false&auto_play=false&show_user=true",
+        tracklist: [],
+      },
+      {
         code: "EP-13",
         title: "Hookah Lounge — Road to Teques 6",
         url: "https://soundcloud.com/eduardo-love/episode-13",
         embed: "https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/tracks/soundcloud%253Atracks%253A2265452678&color=%23151010&inverse=false&auto_play=false&show_user=true",
+        tracklist: [],
+      },
+      {
+        code: "EP-12",
+        title: "Session 12",
+        url: "https://soundcloud.com/eduardo-love/session-12",
+        embed: "https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/tracks/soundcloud%253Atracks%253A2181393787&color=%231c1a1b&inverse=false&auto_play=false&show_user=true",
         tracklist: [],
       },
     ],
