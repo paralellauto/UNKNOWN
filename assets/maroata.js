@@ -318,16 +318,62 @@
       .join("")}</ol>`;
   };
 
+  /* Juliet's file: her ID, lines, traits and status, the first picture as its cover, the rest as a grid in which
+     every picture keeps its own shape (rows of equal height), and a viewer for one picture at a time. */
+  const julietGallery = () => ((D.juliet && D.juliet.gallery) || []).filter((g) => g && g.src);
+  // width / height from content.js `size`; 3:4 until a picture without one has loaded (see bind)
+  const julietRatio = (g) => {
+    const s = Array.isArray(g.size) ? g.size.map(Number) : [];
+    return s[0] > 0 && s[1] > 0 ? s[0] / s[1] : 0;
+  };
+  const julietAlt = (g) => g.alt || `${(D.juliet && D.juliet.name) || "Juliet"}, ${g.caption || ""}`;
+  // "System Core / VII": the numeral never wraps away from its slash
+  const capKeep = (c) => esc(c || "").replace(/ \/ /g, " /\u00a0");
   R.juliet = function () {
     const j = D.juliet || {};
+    const list = julietGallery();
+    const n = list.length;
+    const words = (a) => (Array.isArray(a) ? a : []).filter(Boolean);
+    const tag = String(j.tagline || "");
+    const tile = (g, i) => {
+      const r = julietRatio(g);
+      const lead = i === 0;
+      // the cover is drawn larger than a grid picture: screens with dense pixels get the full picture
+      const srcset = lead && g.thumb ? ` srcset="${esc(asset(g.thumb))} 1x, ${esc(asset(g.src))} 2x"` : "";
+      return `<figure class="m-juliet__img${lead ? " m-juliet__lead" : ""}" style="--r:${(r || 0.75).toFixed(4)}"${r ? "" : " data-ratio=\"auto\""}>
+        <button type="button" class="m-juliet__open" data-juliet-view="${i}" aria-label="View ${esc(g.caption || "picture")}, ${i + 1} of ${n}">
+          <img src="${esc(asset(g.thumb || g.src))}"${srcset} alt="${esc(julietAlt(g))}"${lead ? "" : ` loading="lazy"`} decoding="async" draggable="false"></button>
+        <figcaption><span class="m-juliet__cap">${capKeep(g.caption)}</span></figcaption></figure>`;
+    };
     return `<div class="m-juliet">
-      <div class="m-juliet__file">
-        <span class="m-juliet__code">${esc(j.code || "")} · v${esc(j.version || "")}</span>
-        <p class="m-juliet__lines">${(j.lines || []).map(esc).join("<br>")}</p>
+      <div class="m-juliet__top">
+        <div class="m-juliet__file">
+          <p class="m-juliet__id"><span class="m-juliet__sq" aria-hidden="true"></span><span>${esc(j.code || "")}</span><span>${j.interface ? esc(j.interface) + " · " : ""}v${esc(j.version || "")}</span><span class="m-juliet__state">Status <b>Active</b></span></p>
+          <p class="m-juliet__lines">${words(j.lines).map((l) => `<span>${esc(l)}</span>`).join("")}</p>
+          ${words(j.traits).length || words(j.status).length ? `<dl class="m-juliet__spec">
+            ${words(j.traits).length ? `<div class="m-juliet__row"><dt>Traits</dt><dd class="m-juliet__traits">${words(j.traits).map((t) => `<span>${esc(t)}</span>`).join("")}</dd></div>` : ""}
+            ${words(j.status).length ? `<div class="m-juliet__row"><dt>System</dt><dd class="m-juliet__status">${words(j.status).map((t) => `<span>${esc(t)}</span>`).join("")}</dd></div>` : ""}
+          </dl>` : ""}
+          ${tag ? `<p class="m-juliet__tag">${/_$/.test(tag) ? `${esc(tag.slice(0, -1))}<span class="m-juliet__caret" aria-hidden="true">_</span>` : esc(tag)}</p>` : ""}
+        </div>
+        ${n ? tile(list[0], 0) : ""}
       </div>
-      <div class="m-juliet__gallery">${(j.gallery || [])
-        .map((g) => `<figure class="m-juliet__img"><img src="${esc(asset(g.src))}" alt="${esc(j.name || "Juliet")}, ${esc(g.caption || "")}" loading="lazy"><figcaption>${esc(g.caption || "")}</figcaption></figure>`)
-        .join("")}</div></div>`;
+      ${n > 1 ? `<h3 class="m-juliet__sub">Archive <span>${pad(n - 1)} ${n - 1 === 1 ? "file" : "files"}</span></h3>
+      <div class="m-juliet__gallery">${list.slice(1).map((g, k) => tile(g, k + 1)).join("")}</div>` : ""}
+      ${n ? `<div class="m-jv" role="dialog" aria-modal="true" aria-label="${esc(j.name || "Juliet")}: pictures" hidden>
+        <div class="m-jv__bar">
+          <p class="m-jv__id hud"><span class="m-juliet__sq" aria-hidden="true"></span>${esc(j.code || "")} <span class="m-jv__file"></span></p>
+          <p class="m-jv__cap" aria-live="polite"></p>
+          <button type="button" class="m-jv__close hud" data-jv="close" aria-label="Back to the file">[ × ] Back</button>
+        </div>
+        <div class="m-jv__stage"><img class="m-jv__lo" alt="" aria-hidden="true" draggable="false"><img class="m-jv__hi" alt="" draggable="false"></div>
+        <div class="m-jv__foot">
+          <button type="button" class="m-jv__step m-jv__prev" data-jv="-1" aria-label="Previous picture"><span class="m-jv__arrow" aria-hidden="true"></span><span class="m-jv__word">Prev</span></button>
+          <span class="m-jv__count"></span>
+          <button type="button" class="m-jv__step m-jv__next" data-jv="1" aria-label="Next picture"><span class="m-jv__word">Next</span><span class="m-jv__arrow" aria-hidden="true"></span></button>
+        </div>
+      </div>` : ""}
+    </div>`;
   };
 
   /* UNKNOWN radio */
@@ -928,9 +974,86 @@
     }
   }
 
+  /* ---------- Juliet's viewer: one picture large and whole, inside her sheet ----------
+     Not a section of its own: no address, no history entry, no page view. Escape, Back or a new sheet closes it;
+     only the pictures either side of the one on screen are fetched ahead. */
+  let jv = null; // { el, i } while the viewer is open
+  function viewJuliet(i) {
+    const el = sheet && $(".m-jv", sheet);
+    const list = julietGallery();
+    if (!el || !list.length) return;
+    const n = list.length;
+    i = ((Math.round(Number(i)) || 0) % n + n) % n;
+    const g = list[i];
+    const lo = $(".m-jv__lo", el), hi = $(".m-jv__hi", el), stage = $(".m-jv__stage", el);
+    // never drawn larger than the picture itself (a small one stays sharp); from `size`, or once it has loaded
+    const fit = (w, h) => {
+      stage.style.setProperty("--nw", w > 0 && h > 0 ? `${w}px` : "100%");
+      stage.style.setProperty("--nh", w > 0 && h > 0 ? `${h}px` : "100%");
+    };
+    const r = julietRatio(g);
+    fit(r ? Number(g.size[0]) : 0, r ? Number(g.size[1]) : 0);
+    hi.classList.remove("is-in");
+    hi.onload = () => {
+      if (!jv || jv.i !== i) return;
+      if (!r) fit(hi.naturalWidth, hi.naturalHeight);
+      hi.classList.add("is-in");
+    };
+    lo.src = asset(g.thumb || g.src); // already in the grid: shows at once, the full picture lands on it
+    hi.alt = julietAlt(g);
+    hi.src = asset(g.src);
+    if (hi.complete && hi.naturalWidth) {
+      if (!r) fit(hi.naturalWidth, hi.naturalHeight);
+      hi.classList.add("is-in");
+    }
+    $(".m-jv__cap", el).textContent = g.caption || "";
+    $(".m-jv__file", el).textContent = `· File ${pad(i + 1)}`;
+    $(".m-jv__count", el).textContent = `${pad(i + 1)} / ${pad(n)}`;
+    $$(".m-jv__step", el).forEach((b) => (b.hidden = n < 2));
+    if (n > 1) [i - 1, i + 1].forEach((k) => { const im = new Image(); im.decoding = "async"; im.src = asset(list[(k + n) % n].src); });
+    if (!jv) {
+      jv = { el, i };
+      el.hidden = false;
+      sheet.classList.add("is-viewing");
+      requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add("is-open")));
+      const back = $(".m-jv__close", el);
+      if (back) back.focus({ preventScroll: true });
+    }
+    jv.i = i;
+  }
+  function stepJuliet(d) { if (jv) viewJuliet(jv.i + d); }
+  // returns whether a viewer was open; focus goes back to the picture that was on screen
+  function closeJuliet(silent) {
+    if (!jv) return false;
+    const { el, i } = jv;
+    jv = null;
+    el.classList.remove("is-open");
+    el.hidden = true;
+    sheet.classList.remove("is-viewing");
+    const tile = !silent && $(`[data-juliet-view="${i}"]`, sheet);
+    if (tile) {
+      tile.focus({ preventScroll: true });
+      reveal(tile);
+    }
+    return true;
+  }
+  // Focus moved by script (preventScroll: the page itself never scrolls) is brought into view inside the sheet
+  // body only: a picture below the fold scrolls up with its caption, the page and the board stay put.
+  function reveal(el) {
+    const body = el && el.closest(".sheet__body");
+    if (!body) return;
+    const box = el.closest("figure") || el;
+    const b = body.getBoundingClientRect(), r = box.getBoundingClientRect();
+    const k = b.height ? body.offsetHeight / b.height : 1; // the board scales the sheet on desktop
+    const pad = 16;
+    if (r.top < b.top + pad) body.scrollTop -= (b.top + pad - r.top) * k;
+    else if (r.bottom > b.bottom - pad) body.scrollTop += Math.min(r.bottom - b.bottom + pad, r.top - b.top - pad) * k;
+  }
+
   function open(type, arg, fromHistory) {
     if (!sheet || !TITLES[type]) return;
     clearTimeout(closeTimer);
+    closeJuliet(true);
     if (sheet.hidden) lastFocus = document.activeElement;
     if (type === "videos") {
       resetVideos();
@@ -968,6 +1091,7 @@
 
   function close(fromHistory) {
     if (!sheet || sheet.hidden || !sheet.classList.contains("is-open")) return;
+    closeJuliet(true);
     sheet.classList.remove("is-open");
     sheetOpen = false;
     view = { section: "home", arg: undefined };
@@ -1263,13 +1387,13 @@
   }
   const FOCUSABLE = "a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),iframe,[tabindex]:not([tabindex='-1'])";
   function trapList() {
-    const list = $$(FOCUSABLE, sheet).filter(shown);
+    const list = $$(FOCUSABLE, jv ? jv.el : sheet).filter(shown); // Juliet's viewer keeps focus to itself
     // The deck's player is reachable too: the blocked hint asks for a press inside it.
     if (deckOnTop()) list.push(...$$("iframe, button:not([disabled])", $(".m-deck__live", deck) || deck).filter(shown));
     return list;
   }
   function inTrap(el) {
-    return !!el && (sheet.contains(el) || (deck && deck.contains(el) && deckOnTop()));
+    return !!el && ((jv ? jv.el : sheet).contains(el) || (deck && deck.contains(el) && deckOnTop()));
   }
 
   /* ---------- quote rotator ---------- */
@@ -1461,7 +1585,7 @@
   /* ---------- events ---------- */
   function bind() {
     document.addEventListener("click", (e) => {
-      const t = e.target.closest("[data-play],[data-play-episode],[data-show-episode],[data-play-video],[data-video],[data-post],[data-open],[data-consent],[data-privacy-lang],[data-m='sheet-close']");
+      const t = e.target.closest("[data-play],[data-play-episode],[data-show-episode],[data-play-video],[data-video],[data-post],[data-open],[data-consent],[data-privacy-lang],[data-juliet-view],[data-jv],[data-m='sheet-close']");
       if (!t) {
         if (sheet && !sheet.hidden && e.target === sheet) close();
         return;
@@ -1476,9 +1600,15 @@
       if (t.dataset.open) return open(t.dataset.open);
       if (t.dataset.consent) return choose(t.dataset.consent);
       if (t.dataset.privacyLang) return setPrivacyLang(t.dataset.privacyLang);
+      if (t.dataset.julietView != null) return viewJuliet(t.dataset.julietView);
+      if (t.dataset.jv) return t.dataset.jv === "close" ? closeJuliet() : stepJuliet(Number(t.dataset.jv));
     });
     document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") return close();
+      if (e.key === "Escape") return closeJuliet() || close(); // the viewer first, then the sheet
+      if (jv && (e.key === "ArrowLeft" || e.key === "ArrowRight") && !e.altKey && !e.metaKey && !e.ctrlKey) {
+        e.preventDefault();
+        return stepJuliet(e.key === "ArrowLeft" ? -1 : 1);
+      }
       if (e.key !== "Tab" || !sheetOpen) return;
       const list = trapList();
       if (!list.length) return;
@@ -1486,14 +1616,34 @@
       const k = list.indexOf(document.activeElement);
       const n = list.length;
       e.preventDefault();
-      list[k === -1 ? (e.shiftKey ? n - 1 : 0) : (k + (e.shiftKey ? n - 1 : 1)) % n].focus({ preventScroll: true });
+      const to = list[k === -1 ? (e.shiftKey ? n - 1 : 0) : (k + (e.shiftKey ? n - 1 : 1)) % n];
+      to.focus({ preventScroll: true });
+      reveal(to);
     });
     // Focus that still slips out (e.g. tabbing out of an embedded player) goes back to the sheet.
     document.addEventListener("focusin", (e) => {
       if (!sheetOpen || inTrap(e.target)) return;
-      const c = $("[data-m='sheet-close']", sheet);
+      const c = jv ? $(".m-jv__close", jv.el) : $("[data-m='sheet-close']", sheet);
       if (c) c.focus({ preventScroll: true });
     });
+    // Juliet's viewer: a horizontal swipe (finger or pen) steps through the pictures
+    let swipe = null;
+    document.addEventListener("pointerdown", (e) => {
+      swipe = jv && e.isPrimary && e.pointerType !== "mouse" && e.target.closest(".m-jv__stage") ? { id: e.pointerId, x: e.clientX, y: e.clientY } : null;
+    });
+    document.addEventListener("pointerup", (e) => {
+      if (!swipe || e.pointerId !== swipe.id) return;
+      const dx = e.clientX - swipe.x, dy = e.clientY - swipe.y;
+      swipe = null;
+      if (Math.abs(dx) >= 40 && Math.abs(dx) > Math.abs(dy) * 1.5) stepJuliet(dx < 0 ? 1 : -1);
+    });
+    document.addEventListener("pointercancel", () => (swipe = null));
+    // a gallery picture without a `size` in content.js takes its own shape once it has loaded
+    document.addEventListener("load", (e) => {
+      const img = e.target;
+      const fig = img && img.tagName === "IMG" && img.closest("[data-ratio='auto']");
+      if (fig && img.naturalWidth && img.naturalHeight) fig.style.setProperty("--r", (img.naturalWidth / img.naturalHeight).toFixed(4));
+    }, true);
     addEventListener("popstate", () => {
       if (unwinding) {
         // close() walked back to the entry the visitor arrived on; if that was a

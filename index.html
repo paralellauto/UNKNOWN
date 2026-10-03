@@ -392,15 +392,73 @@ html.is-keys .board .m-deck:is([data-state="armed"], [data-audio="blocked"]) .m-
 .m-sheet__handles .m-handle::after { content: " ↗"; font-size: .6em; color: var(--amber); }
 .m-sheet__handles .m-handle:hover { color: var(--amber); }
 .sheet .m-ig { gap: 6px; }
-/* sheet: juliet */
-.m-juliet { padding-top: 18px; }
-.m-juliet__code { font: 400 9.5px/1.25 var(--f-hud); font-stretch: 87.5%; letter-spacing: .1em; text-transform: uppercase; color: var(--amber); }
-.m-juliet__lines { margin: 12px 0 22px; font: 300 34px/1 var(--f-display); font-stretch: 62%; text-transform: uppercase; color: var(--paper); }
-.m-juliet__gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-.m-juliet__img { margin: 0; }
-.m-juliet__img img { width: 100%; aspect-ratio: 3 / 4; object-fit: cover; filter: grayscale(1) contrast(1.15); transition: filter .5s; }
-.m-juliet__img:hover img { filter: none; }
-.m-juliet__img figcaption { margin-top: 6px; font: 400 9px/1.2 var(--f-hud); font-stretch: 87.5%; letter-spacing: .1em; text-transform: uppercase; color: var(--amber); }
+/* sheet: juliet — her file. Top: the ID line, her lines, traits and system status beside the cover picture.
+   Under it the archive: rows of equal height in which every picture keeps its own shape (--r = width / height;
+   each one grows in proportion to it), so posters (2:3), close-ups (5:6) and the older 3:4 pieces are never cropped */
+.m-juliet { padding-top: 18px; } /* not positioned: the viewer inside it covers the whole sheet frame */
+.m-juliet__top { display: grid; grid-template-columns: minmax(0, 1fr) 220px; column-gap: 32px; }
+.m-juliet__file { min-width: 0; display: flex; flex-direction: column; }
+.m-juliet__sq { flex: none; width: 6px; height: 6px; background: var(--amber); }
+.m-juliet__id { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; margin: 0; padding-bottom: 12px; border-bottom: 1px solid var(--amber-line); font: 400 9.5px/1.25 var(--f-hud); font-stretch: 87.5%; letter-spacing: .1em; text-transform: uppercase; color: var(--amber); }
+.m-juliet__id > span:not(.m-juliet__sq) + span:not(.m-juliet__state)::before { content: "·"; margin-right: 14px; color: var(--amber-dim); }
+.m-juliet__state { margin-left: auto; }
+.m-juliet__state b { font-weight: 400; color: var(--paper); }
+.m-juliet__state b::before { content: ""; display: inline-block; width: 5px; height: 5px; margin: 0 6px 0 4px; vertical-align: 1px; background: var(--amber); animation: blink calc(var(--beat, .45s) * 2) steps(1) infinite; }
+.m-juliet__lines { margin: 24px 0 0; font: 300 52px/.98 var(--f-display); font-stretch: 62%; text-transform: uppercase; color: var(--paper); text-wrap: balance; }
+.m-juliet__lines span { display: block; }
+.m-juliet__lines span + span { color: var(--paper-dim); }
+.m-juliet__spec { margin: 26px 0 0; }
+.m-juliet__row { display: grid; grid-template-columns: 76px minmax(0, 1fr); align-items: baseline; column-gap: 12px; padding: 10px 0; border-top: 1px solid var(--seam); }
+.m-juliet__row:last-child { border-bottom: 1px solid var(--seam); }
+.m-juliet__row dt { font: 500 9.5px/1.4 var(--f-meta); letter-spacing: .14em; text-transform: uppercase; color: var(--paper-dim); }
+.m-juliet__row dd { display: flex; flex-wrap: wrap; gap: 4px 18px; margin: 0; font: 500 10.5px/1.4 var(--f-meta); letter-spacing: .14em; text-transform: uppercase; }
+.m-juliet__traits { color: var(--paper); }
+.m-juliet__traits span:not(:last-child)::after { content: "/"; margin-left: 18px; color: var(--amber-dim); }
+.m-juliet__status { color: var(--amber); }
+.m-juliet__status span::before { content: ">> "; color: var(--amber-dim); }
+.m-juliet__tag { margin: 0; padding-top: 22px; font: 400 9.5px/1.25 var(--f-hud); font-stretch: 87.5%; letter-spacing: .1em; text-transform: uppercase; color: var(--amber); }
+.m-juliet__caret { animation: caret 1s steps(1) infinite; }
+.m-juliet__img { min-width: 0; margin: 0; }
+.m-juliet__open { position: relative; display: block; width: 100%; aspect-ratio: var(--r, .75); overflow: hidden; background: var(--ink); }
+.m-juliet__open::after { content: ""; position: absolute; inset: 0; border: 1px solid var(--amber-line); pointer-events: none; transition: border-color .2s; }
+.m-juliet__open:hover::after { border-color: var(--amber); }
+.m-juliet__open:focus-visible { outline-offset: 2px; }
+.m-juliet__open img { width: 100%; height: 100%; object-fit: cover; filter: grayscale(1) contrast(1.12); transition: filter .5s; -webkit-user-drag: none; user-select: none; }
+.m-juliet__open:hover img { filter: none; }
+/* the index, then the name; a name that wraps keeps a hanging indent ("/ VII" under "System Core", not under "07") */
+.m-juliet__img figcaption { margin-top: 7px; font: 400 9px/1.3 var(--f-hud); font-stretch: 87.5%; letter-spacing: .1em; text-transform: uppercase; color: var(--amber); }
+.m-juliet__cap { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.m-juliet__sub { display: flex; align-items: center; gap: 8px; margin: 30px 0 14px; padding-bottom: 10px; border-bottom: 1px solid var(--amber-line); font: 400 9.5px/1.25 var(--f-hud); font-stretch: 87.5%; letter-spacing: .1em; text-transform: uppercase; color: var(--amber); }
+.m-juliet__sub::before { content: ""; width: 6px; height: 6px; background: var(--amber); }
+.m-juliet__sub span { margin-left: auto; color: var(--amber-dim); }
+.m-juliet__gallery { --rh: 172px; display: flex; flex-wrap: wrap; gap: 16px 8px; }
+.m-juliet__gallery .m-juliet__img { flex: var(--r, .75) 1 calc(var(--r, .75) * var(--rh)); max-width: calc(var(--r, .75) * var(--rh) * 1.25); }
+/* a row stretches at most a quarter past --rh; a row that would need more ends with a gap instead of towering */
+/* the last row keeps the row height instead of stretching to the edge */
+.m-juliet__gallery::after { content: ""; flex: 10000 1 0px; }
+/* the viewer: covers the whole sheet; the picture whole (contain) and always in colour */
+.m-jv { position: absolute; inset: 0; z-index: 5; display: flex; flex-direction: column; background: var(--sheet); opacity: 0; transition: opacity .25s var(--ease); }
+.m-jv.is-open { opacity: 1; }
+.sheet.is-viewing .sheet__body { overflow: hidden; }
+.m-jv__bar { flex: none; display: flex; align-items: center; gap: 16px; min-width: 0; padding: 12px 22px; border-bottom: 1px solid var(--amber-line); }
+.m-jv__id { flex: none; display: flex; align-items: center; gap: 8px; margin: 0; white-space: nowrap; }
+.m-jv__file { color: var(--amber-dim); }
+.m-jv__cap { flex: 1; min-width: 0; margin: 0; font: 600 17px/1.1 var(--f-display); font-stretch: 85%; letter-spacing: .02em; text-transform: uppercase; color: var(--paper); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.m-jv__close { flex: none; min-height: 34px; padding: 8px 10px; border: 1px solid var(--amber-line); color: var(--amber); white-space: nowrap; transition: background .15s, color .15s, border-color .15s; }
+.m-jv__close:hover { background: var(--amber); border-color: var(--amber); color: var(--ink); }
+.m-jv__stage { position: relative; flex: 1; min-height: 0; margin: 16px 22px; touch-action: pan-y; touch-action: pan-y pinch-zoom; }
+.m-jv__stage img { position: absolute; inset: 0; margin: auto; width: 100%; height: 100%; max-width: min(100%, var(--nw, 100%)); max-height: min(100%, var(--nh, 100%)); object-fit: contain; -webkit-user-drag: none; user-select: none; -webkit-touch-callout: none; }
+.m-jv__hi { opacity: 0; transition: opacity .3s var(--ease); }
+.m-jv__hi.is-in { opacity: 1; }
+.m-jv__foot { flex: none; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; padding: 0 22px 16px; }
+.m-jv__step { justify-self: start; height: 44px; min-width: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 0 14px; border: 1px solid var(--amber-line); font: 500 10px/1 var(--f-meta); letter-spacing: .16em; text-transform: uppercase; color: var(--amber); transition: background .15s, color .15s, border-color .15s; }
+.m-jv__next { grid-column: 3; justify-self: end; }
+.m-jv__step:hover { background: var(--amber); border-color: var(--amber); color: var(--ink); }
+.m-jv__arrow { flex: none; width: 0; height: 0; border-top: 5px solid transparent; border-bottom: 5px solid transparent; }
+.m-jv__prev .m-jv__arrow { border-right: 8px solid currentColor; }
+.m-jv__next .m-jv__arrow { border-left: 8px solid currentColor; }
+.m-jv__count { grid-column: 2; font: 500 11px/1 var(--f-meta); letter-spacing: .2em; color: var(--paper); font-variant-numeric: tabular-nums; white-space: nowrap; }
+@media (pointer: coarse) { .m-jv__close { min-height: 44px; } }
 
 /* sheet: UNKNOWN radio + episode — the black-slab variant */
 .sheet[data-type="radio"] .sheet__frame, .sheet[data-type="episode"] .sheet__frame { background: var(--slab); border-color: rgba(255,255,255,.18); box-shadow: inset 0 2px 0 #fff; }
@@ -540,7 +598,7 @@ html.has-consent-line .directive { visibility: hidden; }
 
 /* touch screens get colour straight away */
 @media (hover: none) {
-  .m-video__thumb img, .m-vplayer__start img, .m-ig__item img, .m-juliet__img img { filter: none; }
+  .m-video__thumb img, .m-vplayer__start img, .m-ig__item img, .m-juliet__open img { filter: none; }
 }
 
 /* shared pieces that both layouts position */
@@ -725,6 +783,9 @@ html.has-consent-line .directive { visibility: hidden; }
   .sheet__title { font-size: 32px; }
   .sheet[data-type="radio"] .sheet__title, .sheet[data-type="episode"] .sheet__title { font-size: 36px; }
   .sheet__body { padding: 4px 16px 24px; }
+  /* Juliet's archive on a full-screen sheet: the row height follows the screen width (100vw less the body's
+     padding), so the rows break the same way on every tablet: six pictures, then three */
+  .m-juliet__gallery { --rh: min(calc((100vw - 32px) * .205), 260px); }
   .m-radio__head { grid-template-columns: minmax(0, 1fr); row-gap: 10px; }
   .m-radio__logo { grid-row: auto; font-size: 96px; margin-bottom: 6px; }
   .m-radio__status { grid-template-columns: minmax(0, 1fr); }
@@ -734,7 +795,24 @@ html.has-consent-line .directive { visibility: hidden; }
   .m-episode__btn { grid-template-columns: 64px minmax(0, 1fr); column-gap: 10px; }
   .m-episode__code { font-size: 9.5px; padding: 2px 4px; }
   .m-episode__title { font-size: 20px; }
-  .m-juliet__gallery, .sheet .m-ig { grid-template-columns: repeat(2, 1fr); }
+  .sheet .m-ig { grid-template-columns: repeat(2, 1fr); }
+  /* Juliet's viewer on a full-screen sheet: clear of the notch and the home bar, and of the deck while it plays */
+  .m-jv { padding-top: var(--sat); padding-bottom: var(--sab); }
+  html.is-playing .m-jv { padding-bottom: calc(44px + var(--sab)); }
+  .m-jv__bar { gap: 12px; padding: 0 16px; min-height: 60px; }
+  .m-jv__stage { margin: 12px 16px; }
+  .m-jv__foot { padding: 0 16px 12px; }
+  /* phones on their side: a slim bar, Prev and Next either side of the picture, the count under it */
+  @media (orientation: landscape) and (max-height: 500px) {
+    .m-jv { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-rows: auto minmax(0, 1fr) auto; padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }
+    .m-jv__bar { grid-column: 1 / -1; min-height: 52px; }
+    .m-jv__foot { display: contents; }
+    .m-jv__stage { grid-column: 2; grid-row: 2; margin: 8px 12px 0; }
+    .m-jv__step { grid-row: 2; align-self: center; margin: 0 16px; }
+    .m-jv__prev { grid-column: 1; }
+    .m-jv__next { grid-column: 3; }
+    .m-jv__count { grid-column: 2; grid-row: 3; justify-self: center; padding: 7px 0 9px; }
+  }
   .sheet .m-video__btn { grid-template-columns: 120px minmax(0, 1fr); column-gap: 12px; }
   .sheet .m-video__title { font-size: 17px; }
   .m-privacy__btns { width: 100%; }
@@ -746,6 +824,16 @@ html.has-consent-line .directive { visibility: hidden; }
   @media (max-width: 599px) {
     .sheet .m-gig { grid-template-columns: 76px minmax(0, 1fr) auto; }
     .sheet .m-gig__city { font-size: 19px; }
+    /* Juliet's file in one column: ID, lines, spec, then the cover as wide as the screen allows */
+    .m-juliet__top { grid-template-columns: minmax(0, 1fr); row-gap: 26px; }
+    .m-juliet__lead { width: 100%; }
+    .m-juliet__lines { font-size: 36px; }
+    .m-juliet__row { grid-template-columns: 64px minmax(0, 1fr); }
+    .m-juliet__row dd { column-gap: 14px; }
+    .m-juliet__traits span:not(:last-child)::after { content: none; }
+    .m-juliet__gallery { --rh: calc((100vw - 32px) * .42); gap: 14px 6px; } /* phones: three, three, one, two */
+    .m-jv__id { display: none; }
+    .m-jv__cap { font-size: 16px; }
   }
 
   /* tablets in portrait: same composition, sized for a bigger screen held further away */
@@ -1166,7 +1254,9 @@ html.has-consent-line .directive { visibility: hidden; }
 @media (prefers-reduced-motion: reduce) {
   .grain, .win__drift, .led, .m-quote__text::after, .m-set.is-playing .m-set__state, .m-episode.is-playing .m-episode__play span,
   .m-radio-latest.is-playing .m-radio-latest__icon, .m-ep.is-playing .m-ep__icon, .m-deck[data-kind="episode"] .m-deck__label::before,
-  .m-onair__dot, .lamp, .radio-live .bar__unk .lamp, .radio-live .dock__unk .lamp, .is-video-playing .w-video .win__count::before { animation: none !important; }
+  .m-onair__dot, .lamp, .radio-live .bar__unk .lamp, .radio-live .dock__unk .lamp, .is-video-playing .w-video .win__count::before,
+  .m-juliet__state b::before, .m-juliet__caret { animation: none !important; }
+  .m-jv, .m-jv__hi, .m-juliet__open img { transition: none; }
   .m-vplayer__play { transition: none; }
   .m-vplayer__start:hover .m-vplayer__play { transform: none; }
   .beam { display: none; }
@@ -1244,13 +1334,13 @@ html.has-consent-line .directive { visibility: hidden; }
   </section>
 
   <figure class="subject" id="subject">
+    <!-- the first scan, so the frame is never empty; the page script builds the rotation from juliet.scans in content.js -->
     <div class="subject__stack">
       <img class="scan is-cur" src="assets/img/juliet/juliet-core-03-figure.jpg" width="490" height="924" alt="Juliet, the MAROATA muse, in black cat-eye sunglasses and gold hoops">
-      <img class="scan" src="assets/img/juliet/juliet-core-02-figure.jpg" width="500" height="929" alt="Juliet in galaxy-lens sunglasses and a black jacket">
     </div>
     <div class="subject__scrim" aria-hidden="true"></div>
     <span class="corner tr" aria-hidden="true"></span><span class="corner bl" aria-hidden="true"></span><span class="corner br" aria-hidden="true"></span>
-    <span class="subject__label hud" aria-hidden="true">Subject // Juliet · <span data-m="juliet-code"></span> · <span id="scan-no">Scan 01/02</span></span>
+    <span class="subject__label hud" aria-hidden="true">Subject // Juliet · <span data-m="juliet-code"></span> · <span id="scan-no">Scan 01/01</span></span>
     <button type="button" class="subject__open" data-open="juliet" aria-label="Open Juliet's file"></button>
   </figure>
 
@@ -1464,18 +1554,75 @@ html.has-consent-line .directive { visibility: hidden; }
     if (cl) cl.classList.toggle("no-play", !$(".m-radio-latest__play", cl));
   }
 
-  /* ---------- Juliet: two scans, swapped by the beam ---------- */
+  /* ---------- Juliet: the scans in content.js (juliet.scans), swapped by the beam, one after another ----------
+     Only the scan on screen and the next one are downloaded at first; each later one is fetched a few seconds
+     before its own pass (PREFETCH), never during the intro. A scan that fails to load (a typo in content.js)
+     drops out of the rotation. Reduced motion: no passes, only the first. */
+  var scanList = ((D.juliet && D.juliet.scans) || []).filter(function (s) { return s && s.src; });
   var scans = $$(".subject .scan");
   var scanNo = document.getElementById("scan-no");
   var cur = 0;
+  if (scanList.length && scans[0]) {
+    var stack = scans[0].parentNode;
+    // the markup's scan is the fallback: it gives way when content.js starts with a different picture
+    if (scans[0].getAttribute("src") !== M.asset(scanList[0].src)) {
+      var fallback = scans[0].getAttribute("src"), fallbackAlt = scans[0].alt;
+      // a first scan that does not load gives the frame back to the markup's picture
+      scans[0].onerror = function () {
+        this.onerror = null;
+        this.src = fallback;
+        this.alt = fallbackAlt;
+      };
+      scans[0].removeAttribute("width");
+      scans[0].removeAttribute("height");
+      scans[0].src = M.asset(scanList[0].src);
+    }
+    scans[0].alt = scanList[0].alt || "Juliet";
+    scans.slice(1).forEach(function (img) { img.remove(); });
+    scans = [scans[0]];
+    scanList.slice(1).forEach(function (s) {
+      var img = document.createElement("img");
+      img.className = "scan";
+      img.alt = s.alt || "Juliet";
+      img.decoding = "async";
+      img.setAttribute("data-src", M.asset(s.src));
+      stack.appendChild(img);
+      scans.push(img);
+    });
+  }
+  function scanLabel() {
+    if (scanNo) scanNo.textContent = "Scan " + M.pad(cur + 1) + "/" + M.pad(scans.length);
+  }
+  scanLabel();
+  function nextIndex() { return (cur + 1) % scans.length; }
+  // give the next scan its src (once) and decode it, so its pass never reveals a half-loaded picture
+  function loadScan(img) {
+    if (!img || img.getAttribute("src") || !img.hasAttribute("data-src")) return;
+    img.onerror = function () { dropScan(img); };
+    img.src = img.getAttribute("data-src");
+    img.removeAttribute("data-src");
+    if (img.decode) img.decode().catch(function () {});
+  }
+  function dropScan(img) {
+    var k = scans.indexOf(img);
+    if (k < 1 || k === cur) return;
+    scans.splice(k, 1);
+    img.remove();
+    if (k < cur) cur--;
+    scanLabel();
+    if (scans.length > 1) loadScan(scans[nextIndex()]);
+  }
+  function scanReady(img) { return !!img && !!img.getAttribute("src") && img.complete && img.naturalWidth > 0; }
+  if (!M.reduced && scans.length > 1) loadScan(scans[1]);
   function swapScans() {
-    var next = scans[1 - cur];
-    if (!next || !next.classList.contains("is-next")) return;
+    if (scans.length < 2) return;
+    var next = scans[nextIndex()];
+    if (!next.classList.contains("is-next")) return;
     scans[cur].classList.remove("is-cur");
     next.classList.remove("is-next");
     next.classList.add("is-cur");
-    cur = 1 - cur;
-    if (scanNo) scanNo.textContent = "Scan " + M.pad(cur + 1) + "/" + M.pad(scans.length);
+    cur = nextIndex();
+    scanLabel();
   }
 
   /* ---------- THE PASS: one beam crosses the board, 1000 px/s, every 32 beats ---------- */
@@ -1492,7 +1639,8 @@ html.has-consent-line .directive { visibility: hidden; }
   function pass() {
     if (passing || M.reduced) return;
     passing = true;
-    if (scans[1 - cur]) scans[1 - cur].classList.add("is-next");
+    // a next scan that has not arrived yet waits for the following pass; the beam still crosses
+    if (scans.length > 1 && scanReady(scans[nextIndex()])) scans[nextIndex()].classList.add("is-next");
     if (M.desktopQuery.matches) {
       var t0 = performance.now();
       board.style.setProperty("--bx", "-260px");
@@ -1509,9 +1657,13 @@ html.has-consent-line .directive { visibility: hidden; }
       setTimeout(endPass, 1800);
     }
   }
+  var PREFETCH = 5000; // ms before a pass that its scan is fetched; one that is late waits for the next pass
+  var prefetchT = 0;
   function loop() {
     if (!blocked()) pass();
     setTimeout(loop, PERIOD);
+    clearTimeout(prefetchT);
+    prefetchT = setTimeout(function () { if (scans.length > 1) loadScan(scans[nextIndex()]); }, Math.max(0, PERIOD - PREFETCH));
   }
   function endIntro() { if (window.__sigIntroOff) window.__sigIntroOff(); else root.classList.remove("is-intro", "is-go"); }
   function firstPass() {
@@ -1536,7 +1688,7 @@ html.has-consent-line .directive { visibility: hidden; }
     markNoPlay();
     markLong();
     if (M.reduced) { endIntro(); return; }
-    return Promise.race([Promise.all(scans.map(decode)), wait(700)]).then(function () { return wait(300); }).then(firstPass);
+    return Promise.race([Promise.all(scans.slice(0, 2).map(decode)), wait(700)]).then(function () { return wait(300); }).then(firstPass);
   });
 
   /* ---------- windows: drag by the title bar, clamp above the console, snap to the grid ---------- */

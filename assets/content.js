@@ -63,18 +63,66 @@ window.MAROATA = {
     ],
   },
 
-  /* JULIET — the muse. Images live in assets/img/juliet/ */
+  /* JULIET — the muse. Images live in assets/img/juliet/
+
+     code, version   her ID and version, shown on her file and in the top bar
+     interface       the label in front of the version ("Human interface · v4.2.7")
+     lines           her two lines, shown large on her file
+     traits          shown as one row on her file
+     status          shown as ">> Stable" lines on her file
+     tagline         the last line of her file (a final "_" blinks like a cursor)
+
+     scans: the pictures that take turns in the frame on the main screen; the
+       beam swaps them one after another, in this order. The first one shows
+       when the page opens. Use tall pictures with her face near the top and no
+       lettering in them (the site writes its own). Only the one on screen and
+       the next one are downloaded, so adding more does not slow the page.
+       A picture that cannot be found is skipped.
+       If you change the FIRST one, change it in index.html too (the <img> in
+       figure id="subject"): that copy shows before this file is read, and if
+       the two differ the page downloads both.
+         src   the picture
+         alt   a short description for people who cannot see it
+
+     gallery: her file's pictures, in this order. The first one is the cover
+       (shown large, next to her lines); every picture opens big when tapped.
+       The rest are laid out in rows; the order below mixes tall and wide
+       pictures so the rows come out even on phones too (a very wide one, like
+       Mono Circuit, sits best near the end).
+         src      the full-size picture (opens in the viewer)
+         thumb    optional: a smaller copy for the grid (about 560 px on the
+                  long side); without it the grid loads the full picture
+         size     optional: [width, height] of the picture in pixels; keeps the
+                  grid steady while pictures load
+         caption  its name, shown under it
+         alt      optional: a short description (default: "JULIET, " + caption) */
   juliet: {
     name: "JULIET",
     code: "JS-07",
     version: "4.2.7",
+    interface: "Human interface",
     lines: ["Beauty is the interface.", "Power is the system."],
+    traits: ["Beauty", "Intelligence", "Control", "Freedom"],
+    status: ["Stable", "Synced", "Protected"],
+    tagline: "A more beautiful system_",
+    scans: [
+      { src: "assets/img/juliet/juliet-core-03-figure.jpg", alt: "Juliet, the MAROATA muse, in black cat-eye sunglasses and gold hoops" },
+      { src: "assets/img/juliet/juliet-signal-04-scan.jpg", alt: "Juliet in red neon light, cat-eye sunglasses pushed down, a chrome choker" },
+      { src: "assets/img/juliet/juliet-core-02-figure.jpg", alt: "Juliet in galaxy-lens sunglasses and a black jacket" },
+      { src: "assets/img/juliet/juliet-signal-05-scan.jpg", alt: "Juliet crouching in black leather before a circle of red light" },
+      { src: "assets/img/juliet/juliet-signal-02-scan.jpg", alt: "Juliet seated in a black leather coat beside a column of red light" },
+    ],
     gallery: [
-      { src: "assets/img/juliet/juliet-core-01.jpg", caption: "System Core / I" },
-      { src: "assets/img/juliet/juliet-core-02.jpg", caption: "System Core / II" },
-      { src: "assets/img/juliet/juliet-core-03.jpg", caption: "System Core / III" },
-      { src: "assets/img/juliet/juliet-cosmic.jpg", caption: "Night Lens" },
-      { src: "assets/img/juliet/juliet-mono.jpg", caption: "Mono Circuit" },
+      { src: "assets/img/juliet/juliet-signal-03.jpg", thumb: "assets/img/juliet/juliet-signal-03-thumb.jpg", size: [933, 1400], caption: "System Core / IV", alt: "JULIET System Core poster: Juliet, illustrated, in galaxy-lens sunglasses on red" },
+      { src: "assets/img/juliet/juliet-signal-01.jpg", thumb: "assets/img/juliet/juliet-signal-01-thumb.jpg", size: [1145, 1374], caption: "System Core / V", alt: "JULIET System Core poster: Juliet close up, sunglasses pushed down, lit in red" },
+      { src: "assets/img/juliet/juliet-core-01.jpg", thumb: "assets/img/juliet/juliet-core-01-thumb.jpg", size: [768, 1024], caption: "System Core / I" },
+      { src: "assets/img/juliet/juliet-signal-02.jpg", thumb: "assets/img/juliet/juliet-signal-02-thumb.jpg", size: [933, 1400], caption: "System Core / VI", alt: "JULIET System Core poster: Juliet seated in a black leather coat beside a column of red light" },
+      { src: "assets/img/juliet/juliet-signal-04.jpg", thumb: "assets/img/juliet/juliet-signal-04-thumb.jpg", size: [1145, 1374], caption: "Red Neon", alt: "Juliet in red neon light, cat-eye sunglasses pushed down, a chrome choker" },
+      { src: "assets/img/juliet/juliet-core-02.jpg", thumb: "assets/img/juliet/juliet-core-02-thumb.jpg", size: [768, 1024], caption: "System Core / II" },
+      { src: "assets/img/juliet/juliet-signal-05.jpg", thumb: "assets/img/juliet/juliet-signal-05-thumb.jpg", size: [933, 1400], caption: "System Core / VII", alt: "JULIET System Core poster: Juliet crouching in black leather before a circle of red light" },
+      { src: "assets/img/juliet/juliet-mono.jpg", thumb: "assets/img/juliet/juliet-mono-thumb.jpg", size: [792, 360], caption: "Mono Circuit" },
+      { src: "assets/img/juliet/juliet-core-03.jpg", thumb: "assets/img/juliet/juliet-core-03-thumb.jpg", size: [768, 1024], caption: "System Core / III" },
+      { src: "assets/img/juliet/juliet-cosmic.jpg", size: [402, 360], caption: "Night Lens" },
     ],
   },
 

@@ -27,7 +27,7 @@ Everything lives in **`assets/content.js`**. Each section has comments explainin
 - **Quotes** (`quotes`): shown one at a time, rotating.
 - **Dates** (`gigs`): empty while dates are to be announced. Each gig has `date` (`YYYY-MM-DD`), `time` (`HH:MM`), `city`, `venue`, and optionally `link` (tickets) and `timezone` (the venue's, so the countdown is exact for visitors elsewhere). Past dates disappear on their own.
 - **Transmissions** (`blog`): each post has a `slug` (used in its link, e.g. `#post-four-am`), a title, date, tag, short excerpt and `body` paragraphs. The three posts there now are samples.
-- **Juliet** (`juliet`): her code, version, lines and gallery. Images are in `assets/img/juliet/`.
+- **Juliet** (`juliet`): her code, version, lines, traits, status and tagline (her file), the `scans` that take turns in the frame on the main screen (only the one on screen and the next one are downloaded; a picture that cannot be found is skipped; if you change the first one, change the `<img>` in `figure id="subject"` in `index.html` to the same picture, or the page downloads both), and the `gallery` of her file. Each gallery picture has a full-size `src` (it opens in the viewer: large, whole, arrows / swipe to move on), an optional smaller `thumb` for the grid, an optional `size` and a `caption`; the first one is the file's cover. Images are in `assets/img/juliet/`.
 
 Anything marked `sample: true` shows a small **SAMPLE** tag so it is never mistaken for a real date, episode or post. Remove the flag, or the whole entry, when you replace it.
 
